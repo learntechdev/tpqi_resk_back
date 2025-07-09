@@ -6,9 +6,6 @@ import com.TPQI.thai2learn.services.ReskSettingsFileExtensionService;
 import com.TPQI.thai2learn.DTO.EmailTemplateRequestDTO;
 import com.TPQI.thai2learn.DTO.EmailTemplateResponseDTO;
 import com.TPQI.thai2learn.DTO.EmailTemplateShortResponseDTO;
-import com.TPQI.thai2learn.DTO.UocDTO;
-
-import com.TPQI.thai2learn.services.UocHierarchyService;
 import com.TPQI.thai2learn.services.ReskSettingsEmailTemplateService;
 
 import org.springframework.beans.factory.annotation.Autowired;
