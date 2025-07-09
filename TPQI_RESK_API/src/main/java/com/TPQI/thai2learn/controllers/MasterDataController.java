@@ -29,7 +29,7 @@ public class MasterDataController {
         return masterDataService.getAllCertificateTypes();
     }
 
-    @GetMapping("/UocSector/{occLevelId}")
+    @GetMapping("/UocSelectorHierarchy/{occLevelId}")
     public ResponseEntity<List<UocDTO>> getHierarchy(@PathVariable String occLevelId) {
         return ResponseEntity.ok(uocHierarchyService.getHierarchyByOccLevelId(occLevelId));
     }
