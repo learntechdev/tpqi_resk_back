@@ -1,8 +1,11 @@
 package com.TPQI.thai2learn.controllers;
 
 import com.TPQI.thai2learn.DTO.ReskCertificateTypeDTO;
+import com.TPQI.thai2learn.DTO.UocDTO;
 import com.TPQI.thai2learn.services.MasterDataCertifiteTypeService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.TPQI.thai2learn.services.UocHierarchyService;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,11 +14,23 @@ import java.util.List;
 @RequestMapping("/api/Masterdata")
 public class MasterDataController {
 
-    @Autowired
-    private MasterDataCertifiteTypeService masterDataService;
+    private final MasterDataCertifiteTypeService masterDataService;
+    private final UocHierarchyService uocHierarchyService;
+
+    public MasterDataController(
+            MasterDataCertifiteTypeService masterDataService,
+            UocHierarchyService uocHierarchyService) {
+        this.masterDataService = masterDataService;
+        this.uocHierarchyService = uocHierarchyService;
+    }
 
     @GetMapping("/ListCertificateTypes")
     public List<ReskCertificateTypeDTO> getCertificateTypes() {
         return masterDataService.getAllCertificateTypes();
+    }
+
+    @GetMapping("/UocSector/{occLevelId}")
+    public ResponseEntity<List<UocDTO>> getHierarchy(@PathVariable String occLevelId) {
+        return ResponseEntity.ok(uocHierarchyService.getHierarchyByOccLevelId(occLevelId));
     }
 }
