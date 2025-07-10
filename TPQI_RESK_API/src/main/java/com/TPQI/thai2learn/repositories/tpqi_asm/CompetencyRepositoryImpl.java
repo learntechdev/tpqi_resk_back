@@ -2,6 +2,7 @@ package com.TPQI.thai2learn.repositories.tpqi_asm;
 
 import com.TPQI.thai2learn.DTO.EocDTO;
 import com.TPQI.thai2learn.DTO.PcDTO;
+import com.TPQI.thai2learn.DTO.RelatedQualificationDTO;
 import com.TPQI.thai2learn.DTO.UocDTO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
@@ -87,5 +88,38 @@ public class CompetencyRepositoryImpl implements CompetencyRepository {
                     return dto;
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public String findTier2TitleByOccLevelId(Long occLevelId) {
+        String sql = "SELECT tier2_title FROM standard_qualification WHERE id = :occLevelId LIMIT 1";
+        Query query = entityManager.createNativeQuery(sql, String.class);
+        query.setParameter("occLevelId", occLevelId);
+        try {
+            return (String) query.getSingleResult();
+        } catch (NoResultException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public List<RelatedQualificationDTO> findRelatedQualificationsByTier2Title(String tier2Title) {
+        String sql = "SELECT id, tier1_title, tier2_title, tier3_title, level_name " +
+                     "FROM standard_qualification " +
+                     "WHERE tier2_title = :tier2Title AND status = '1'"; 
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("tier2Title", tier2Title);
+        List<Object[]> results = query.getResultList();
+
+        return results.stream().map(row -> {
+            String name = String.join(" ",
+                    (String) row[1],
+                    (String) row[2],
+                    (String) row[3],
+                    (String) row[4]
+            ).replaceAll("\\s+", " ").trim();
+
+            return new RelatedQualificationDTO(((Number) row[0]).longValue(), name);
+        }).collect(Collectors.toList());
     }
 }

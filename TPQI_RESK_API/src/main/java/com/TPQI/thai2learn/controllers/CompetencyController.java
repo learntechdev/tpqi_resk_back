@@ -1,5 +1,6 @@
 package com.TPQI.thai2learn.controllers;
 
+import com.TPQI.thai2learn.DTO.RelatedQualificationDTO;
 import com.TPQI.thai2learn.DTO.UocDTO;
 import com.TPQI.thai2learn.services.CompetencyService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,5 +30,19 @@ public class CompetencyController {
         }
 
         return ResponseEntity.ok(competencyTree);
+    }
+
+
+    @GetMapping("/related-qualifications/{examScheduleId}")
+    public ResponseEntity<List<RelatedQualificationDTO>> getRelatedQualifications(
+            @PathVariable String examScheduleId) {
+        
+        List<RelatedQualificationDTO> qualifications = competencyService.getRelatedQualifications(examScheduleId);
+
+        if (qualifications.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        
+        return ResponseEntity.ok(qualifications);
     }
 }

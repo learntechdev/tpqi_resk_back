@@ -2,6 +2,7 @@ package com.TPQI.thai2learn.services;
 
 import com.TPQI.thai2learn.DTO.EocDTO;
 import com.TPQI.thai2learn.DTO.PcDTO;
+import com.TPQI.thai2learn.DTO.RelatedQualificationDTO;
 import com.TPQI.thai2learn.DTO.UocDTO;
 import com.TPQI.thai2learn.repositories.tpqi_asm.CompetencyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,5 +68,23 @@ public class CompetencyService {
         }
         
         return new ArrayList<>(uocMap.values());
+    }
+
+
+
+    @Transactional(readOnly = true)
+    public List<RelatedQualificationDTO> getRelatedQualifications(String examScheduleId) {
+        Long occLevelId = competencyRepository.findOccLevelIdByExamScheduleId(examScheduleId);
+        if (occLevelId == null) {
+            return new ArrayList<>();
+        }
+
+        String tier2Title = competencyRepository.findTier2TitleByOccLevelId(occLevelId);
+
+        if (tier2Title == null || tier2Title.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return competencyRepository.findRelatedQualificationsByTier2Title(tier2Title);
     }
 }
