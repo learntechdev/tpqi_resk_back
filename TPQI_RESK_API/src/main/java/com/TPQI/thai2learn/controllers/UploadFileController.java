@@ -1,5 +1,6 @@
 package com.TPQI.thai2learn.controllers;
 
+import com.TPQI.thai2learn.DTO.EvidenceFileDTO;
 import com.TPQI.thai2learn.entities.tpqi_asm.AssessmentEvidenceFile; 
 import com.TPQI.thai2learn.repositories.tpqi_asm.AssessmentEvidenceFileRepository; 
 import com.TPQI.thai2learn.services.FileStorageService;
@@ -8,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -55,4 +58,10 @@ public class UploadFileController {
             return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(response);
         }
     }
+
+    @GetMapping("/by-applicant/{applicantId}")
+    public ResponseEntity<List<EvidenceFileDTO>> getFilesByApplicant(@PathVariable Long applicantId) {
+        List<EvidenceFileDTO> files = fileStorageService.getFilesByApplicantId(applicantId);
+        return ResponseEntity.ok(files);
+}
 }

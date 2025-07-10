@@ -1,5 +1,9 @@
 package com.TPQI.thai2learn.services;
 
+import com.TPQI.thai2learn.DTO.EvidenceFileDTO; 
+import com.TPQI.thai2learn.entities.tpqi_asm.AssessmentEvidenceFile; 
+import com.TPQI.thai2learn.repositories.tpqi_asm.AssessmentEvidenceFileRepository; 
+import org.springframework.beans.factory.annotation.Autowired; 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -11,7 +15,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors; 
 
 @Service
 public class FileStorageService {
@@ -20,6 +26,9 @@ public class FileStorageService {
     private String uploadDir;
 
     private Path rootLocation;
+
+    @Autowired
+    private AssessmentEvidenceFileRepository evidenceFileRepository;
 
     @PostConstruct
     public void init() {
@@ -38,7 +47,6 @@ public class FileStorageService {
         }
         
         try {
-            // สร้างชื่อไฟล์ใหม่ที่ไม่ซ้ำกัน
             String originalFilename = file.getOriginalFilename();
             String fileExtension = "";
             if (originalFilename != null && originalFilename.contains(".")) {
@@ -47,17 +55,30 @@ public class FileStorageService {
             String newFilename = UUID.randomUUID().toString() + fileExtension;
 
             Path destinationFile = this.rootLocation.resolve(Paths.get(newFilename))
-                                     .normalize().toAbsolutePath();
+                                         .normalize().toAbsolutePath();
 
             try (InputStream inputStream = file.getInputStream()) {
                 Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
             }
             
-            // คืนค่าเป็น Path ที่จะเก็บลง DB (เช่น /uploads/xxxxx.jpg)
             return newFilename; 
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to store file.", e);
         }
+    }
+
+
+    public List<EvidenceFileDTO> getFilesByApplicantId(Long applicantId) {
+        List<AssessmentEvidenceFile> files = evidenceFileRepository.findByAssessmentApplicantId(applicantId);
+        
+        return files.stream().map(fileEntity -> {
+            EvidenceFileDTO dto = new EvidenceFileDTO();
+            dto.setId(fileEntity.getId());
+            dto.setOriginalFilename(fileEntity.getOriginalFilename());
+            dto.setFilePath(fileEntity.getFilePath());
+            dto.setEvidenceType(fileEntity.getEvidenceType());
+            return dto;
+        }).collect(Collectors.toList());
     }
 }
