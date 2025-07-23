@@ -29,6 +29,9 @@ public class ReskUser {
     @Column
     private String email;
     
+    @Column(name = "examiner_code")
+    private String examinerCode;
+    
     @Column(nullable = false)
     private String role;
 
@@ -67,4 +70,7 @@ public class ReskUser {
 
     public boolean isActive() { return isActive; }
     public void setActive(boolean active) { this.isActive = active; }
+
+    public String getExaminerCode() { return examinerCode; }
+    public void setExaminerCode(String examinerCode) { this.examinerCode = examinerCode; }
 }
