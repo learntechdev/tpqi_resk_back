@@ -22,7 +22,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/cb")
-@PreAuthorize("hasRole('cb_officer')")
 public class CBController {
 
     @Autowired
@@ -38,6 +37,7 @@ public class CBController {
     private SubmissionService submissionService;
 
     @GetMapping("/applicants")
+    @PreAuthorize("hasRole('cb_officer')")
     public ResponseEntity<?> getApplicants(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,
@@ -50,6 +50,7 @@ public class CBController {
     }
 
     @GetMapping("/submission-statuses")
+    @PreAuthorize("hasRole('cb_officer')")
     public ResponseEntity<List<String>> getSubmissionStatuses() {
         List<String> statuses = List.of(
             "ยังไม่ได้ประเมิน", "ยังไม่ส่งประเมิน", "ส่งประเมินแล้ว",
@@ -59,18 +60,21 @@ public class CBController {
     }
 
     @GetMapping("/submission-details/{applicantId}")
+    @PreAuthorize("hasRole('cb_officer')")
     public ResponseEntity<?> getSubmissionDetailsForCb(@PathVariable Long applicantId) {
         AssessmentSubmissionPageDTO pageData = assessmentSubmissionService.getSubmissionPageDetails(applicantId);
         return ResponseEntity.ok(pageData);
     }
 
     @GetMapping("/files/{applicantId}")
+    @PreAuthorize("hasRole('cb_officer')")
     public ResponseEntity<List<EvidenceFileDTO>> getFilesByApplicant(@PathVariable Long applicantId) {
         List<EvidenceFileDTO> files = fileStorageService.getFilesByApplicantId(applicantId);
         return ResponseEntity.ok(files);
     }
 
     @PostMapping("/upload-file")
+    @PreAuthorize("hasRole('cb_officer')")
     public ResponseEntity<?> uploadFileForApplicant(
             @RequestParam("file") MultipartFile file,
             @RequestParam("applicantId") Long applicantId,
@@ -80,12 +84,14 @@ public class CBController {
     }
 
     @DeleteMapping("/delete-file/{fileId}")
+    @PreAuthorize("hasRole('cb_officer')")
     public ResponseEntity<?> deleteFileForApplicant(@PathVariable Long fileId) {
         fileStorageService.deleteFile(fileId);
         return ResponseEntity.ok(Map.of("message", "File deleted successfully!"));
     }
 
     @PostMapping("/save-submission")
+    @PreAuthorize("hasRole('cb_officer')")
     public ResponseEntity<?> saveSubmissionForApplicant(@RequestBody SubmissionRequestDTO submissionRequest) {
         submissionService.processSubmission(submissionRequest);
         return ResponseEntity.ok().body(Map.of("message", "Submission saved successfully!"));

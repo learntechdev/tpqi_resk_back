@@ -58,11 +58,15 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                     .requestMatchers(
-                            "/api/auth/**",
+                            "/api/auth/profile"
+                    ).authenticated()
+                    .requestMatchers(
+                            "/api/auth/login", 
+                            "/api/auth/request-credentials",
                             "/swagger-ui/**",
                             "/v3/api-docs/**"
                     ).permitAll()
-                    .anyRequest().authenticated() 
+                    .anyRequest().authenticated()
                 );
             http.authenticationProvider(authenticationProvider());
             http.addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);
