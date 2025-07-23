@@ -17,6 +17,8 @@ public interface CompetencyRepository {
     List<PcDTO> findPcsByEocIds(List<String> eocIds);
 
     String findTier2TitleByOccLevelId(Long occLevelId);
-    
+
     List<RelatedQualificationDTO> findRelatedQualificationsByTier2Title(String tier2Title);
+
+    Long findExamScheduleIdByTpqiExamNo(String tpqiExamNo);
 }

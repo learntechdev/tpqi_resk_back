@@ -1,14 +1,12 @@
 package com.TPQI.thai2learn.controllers;
 
 import com.TPQI.thai2learn.DTO.EvidenceFileDTO;
-import com.TPQI.thai2learn.entities.tpqi_asm.AssessmentEvidenceFile; 
-import com.TPQI.thai2learn.repositories.tpqi_asm.AssessmentEvidenceFileRepository; 
 import com.TPQI.thai2learn.services.FileStorageService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import com.TPQI.thai2learn.entities.tpqi_asm.AssessmentEvidenceFile;
 
 import java.util.List;
 import java.util.Map;
@@ -18,38 +16,26 @@ import java.util.Map;
 public class UploadFileController {
 
     private final FileStorageService fileStorageService;
-    private final AssessmentEvidenceFileRepository evidenceFileRepository; 
 
-    @Autowired
     public UploadFileController(
-        FileStorageService fileStorageService,
-        AssessmentEvidenceFileRepository evidenceFileRepository 
+            FileStorageService fileStorageService
     ) {
         this.fileStorageService = fileStorageService;
-        this.evidenceFileRepository = evidenceFileRepository; 
     }
 
     @PostMapping("/upload")
     public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("applicantId") Long applicantId,
-            @RequestParam("evidenceType") String evidenceType) {
+            @RequestParam(value = "description", required = false) String description) {
 
         try {
-            String generatedFileName = fileStorageService.store(file);
-            String filePath = "/uploads/" + generatedFileName;
-  
-            AssessmentEvidenceFile evidenceFile = new AssessmentEvidenceFile();
-            evidenceFile.setAssessmentApplicantId(applicantId);
-            evidenceFile.setEvidenceType(evidenceType);
-            evidenceFile.setFilePath(filePath);
-            evidenceFile.setOriginalFilename(file.getOriginalFilename());
-    
-            evidenceFileRepository.save(evidenceFile);
+            AssessmentEvidenceFile savedFile = fileStorageService.storeAndSave(file, applicantId, description);
 
-            Map<String, String> response = Map.of(
-                "message", "File uploaded and data saved successfully!",
-                "filePath", filePath
+            Map<String, Object> response = Map.of(
+                    "message", "File uploaded successfully!",
+                    "fileId", savedFile.getId(),
+                    "filePath", savedFile.getFilePath()
             );
             return ResponseEntity.ok(response);
 
@@ -63,5 +49,16 @@ public class UploadFileController {
     public ResponseEntity<List<EvidenceFileDTO>> getFilesByApplicant(@PathVariable Long applicantId) {
         List<EvidenceFileDTO> files = fileStorageService.getFilesByApplicantId(applicantId);
         return ResponseEntity.ok(files);
-}
+    }
+
+    @DeleteMapping("/{fileId}")
+    public ResponseEntity<?> deleteFile(@PathVariable Long fileId) {
+        try {
+            fileStorageService.deleteFile(fileId);
+            return ResponseEntity.ok(Map.of("message", "File deleted successfully!"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Failed to delete file: " + e.getMessage()));
+        }
+    }
 }

@@ -1,36 +1,38 @@
 package com.TPQI.thai2learn.services;
 
-import com.TPQI.thai2learn.DTO.EvidenceLinkDTO;
-import com.TPQI.thai2learn.DTO.PriorCertificateDTO;
-import com.TPQI.thai2learn.DTO.SubmissionRequestDTO;
+import com.TPQI.thai2learn.DTO.*;
+import com.TPQI.thai2learn.entities.tpqi_asm.AssessmentApplicant;
 import com.TPQI.thai2learn.entities.tpqi_asm.AssessmentPriorCertificate;
 import com.TPQI.thai2learn.entities.tpqi_asm.AssessmentSubmissionDetails;
 import com.TPQI.thai2learn.entities.tpqi_asm.EvidenceCompetencyLink;
-import com.TPQI.thai2learn.repositories.tpqi_asm.AssessmentApplicantRepository; // Repo ที่ห้ามลบ
-import com.TPQI.thai2learn.repositories.tpqi_asm.AssessmentPriorCertificateRepository;
-import com.TPQI.thai2learn.repositories.tpqi_asm.AssessmentSubmissionDetailsRepository;
-import com.TPQI.thai2learn.repositories.tpqi_asm.EvidenceCompetencyLinkRepository;
+import com.TPQI.thai2learn.repositories.tpqi_asm.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class SubmissionService {
 
     @Autowired
     private EvidenceCompetencyLinkRepository evidenceCompetencyLinkRepository;
-    
     @Autowired
     private AssessmentPriorCertificateRepository priorCertificateRepository;
-
     @Autowired
     private AssessmentSubmissionDetailsRepository submissionDetailsRepository;
+    @Autowired
+    private AssessmentApplicantRepository assessmentApplicantRepository;
+    @Autowired
+    private CompetencyRepository competencyRepository;
+    @Autowired
+    private CompetencyService competencyService;
     
     @Autowired
-    private AssessmentApplicantRepository assessmentApplicantRepository; // Repo ที่ห้ามลบ
+    private AssessmentEvidenceFileRepository evidenceFileRepository;
 
     @Transactional
     public void processSubmission(SubmissionRequestDTO request) {
@@ -39,12 +41,15 @@ public class SubmissionService {
             throw new IllegalArgumentException("Assessment Applicant ID cannot be null.");
         }
 
-        assessmentApplicantRepository.findById(applicantId)
+        AssessmentApplicant applicant = assessmentApplicantRepository.findById(applicantId)
                 .orElseThrow(() -> new IllegalArgumentException("Applicant not found with id: " + applicantId));
+
+        if ("SUBMITTED".equalsIgnoreCase(request.getSubmissionStatus())) {
+            validateSubmission(applicant, request.getEvidenceLinks());
+        }
 
         AssessmentSubmissionDetails details = submissionDetailsRepository.findByAssessmentApplicantId(applicantId)
                 .orElse(new AssessmentSubmissionDetails());
-
         details.setAssessmentApplicantId(applicantId);
         details.setExperienceYears(request.getExperienceYears());
         details.setSubmissionStatus(request.getSubmissionStatus());
@@ -54,16 +59,24 @@ public class SubmissionService {
         evidenceCompetencyLinkRepository.deleteAllByAssessmentApplicantId(applicantId);
 
         if (Boolean.TRUE.equals(request.getHasPriorCertificate()) && request.getPriorCertificates() != null) {
-            List<AssessmentPriorCertificate> priorCertsToSave = new ArrayList<>();
-            for (PriorCertificateDTO certDTO : request.getPriorCertificates()) {
+            List<AssessmentPriorCertificate> priorCertsToSave = request.getPriorCertificates().stream().map(certDTO -> {
                 AssessmentPriorCertificate newCert = new AssessmentPriorCertificate();
                 newCert.setAssessmentApplicantId(applicantId);
                 newCert.setQualificationId(certDTO.getQualificationId());
                 newCert.setEvidenceFileId(certDTO.getFileId());
-                priorCertsToSave.add(newCert);
-            }
+                return newCert;
+            }).collect(Collectors.toList());
             if (!priorCertsToSave.isEmpty()) {
                 priorCertificateRepository.saveAll(priorCertsToSave);
+            }
+        }
+        
+        if (request.getEvidenceDetails() != null) {
+            for (EvidenceDetailDTO detail : request.getEvidenceDetails()) {
+                evidenceFileRepository.findById(detail.getFileId()).ifPresent(file -> {
+                    file.setEvidenceTypes(detail.getEvidenceTypes());
+                    evidenceFileRepository.save(file);
+                });
             }
         }
 
@@ -81,6 +94,30 @@ public class SubmissionService {
             if (!newLinks.isEmpty()) {
                 evidenceCompetencyLinkRepository.saveAll(newLinks);
             }
+        }
+    }
+
+    private void validateSubmission(AssessmentApplicant applicant, List<EvidenceLinkDTO> evidenceLinks) {
+        String tpqiExamNo = applicant.getExamScheduleId();
+        Long examSchedulePkId = competencyRepository.findExamScheduleIdByTpqiExamNo(tpqiExamNo);
+        if (examSchedulePkId == null) {
+            throw new IllegalStateException("ไม่สามารถหารอบสอบสำหรับ validation ได้");
+        }
+
+        List<UocDTO> requiredUocs = competencyService.getCompetencyTreeByExamScheduleId(String.valueOf(examSchedulePkId));
+        Set<String> requiredUocCodes = requiredUocs.stream().map(UocDTO::getUocCode).collect(Collectors.toSet());
+        
+        if (evidenceLinks == null || evidenceLinks.isEmpty()) {
+            throw new IllegalArgumentException("กรุณาแนบหลักฐานให้ครบทุกหน่วยสมรรถนะก่อนยืนยันการส่ง");
+        }
+        
+        Set<String> linkedUocCodes = evidenceLinks.stream()
+            .flatMap(link -> link.getCompetencyCodes().stream())
+            .filter(code -> requiredUocCodes.contains(code))
+            .collect(Collectors.toSet());
+
+        if (!linkedUocCodes.containsAll(requiredUocCodes)) {
+             throw new IllegalArgumentException("ยังไม่ได้แนบหลักฐานสำหรับบางหน่วยสมรรถนะ กรุณาตรวจสอบและแนบหลักฐานให้ครบถ้วน");
         }
     }
 }

@@ -30,7 +30,7 @@ public class CompetencyRepositoryImpl implements CompetencyRepository {
             Object result = query.getSingleResult();
             return Long.parseLong(result.toString());
         } catch (NoResultException e) {
-            return null; 
+            return null;
         }
     }
 
@@ -60,12 +60,12 @@ public class CompetencyRepositoryImpl implements CompetencyRepository {
         return results.stream()
                 .map(row -> {
                     EocDTO dto = new EocDTO(
-                            (String) row[1], 
-                            (String) row[2], 
-                            (String) row[3], 
-                            new ArrayList<>() 
+                            (String) row[1],
+                            (String) row[2],
+                            (String) row[3],
+                            new ArrayList<>()
                     );
-                    dto.setParentUocId((String) row[0]); 
+                    dto.setParentUocId((String) row[0]);
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -81,10 +81,10 @@ public class CompetencyRepositoryImpl implements CompetencyRepository {
         return results.stream()
                 .map(row -> {
                     PcDTO dto = new PcDTO(
-                            (String) row[1], 
-                            (String) row[2]  
+                            (String) row[1],
+                            (String) row[2]
                     );
-                    dto.setParentEocId((String) row[0]); 
+                    dto.setParentEocId((String) row[0]);
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -106,7 +106,7 @@ public class CompetencyRepositoryImpl implements CompetencyRepository {
     public List<RelatedQualificationDTO> findRelatedQualificationsByTier2Title(String tier2Title) {
         String sql = "SELECT id, tier1_title, tier2_title, tier3_title, level_name " +
                      "FROM standard_qualification " +
-                     "WHERE tier2_title = :tier2Title AND status = '1'"; 
+                     "WHERE tier2_title = :tier2Title AND status = '1'";
         Query query = entityManager.createNativeQuery(sql);
         query.setParameter("tier2Title", tier2Title);
         List<Object[]> results = query.getResultList();
@@ -121,5 +121,18 @@ public class CompetencyRepositoryImpl implements CompetencyRepository {
 
             return new RelatedQualificationDTO(((Number) row[0]).longValue(), name);
         }).collect(Collectors.toList());
+    }
+    
+    @Override
+    public Long findExamScheduleIdByTpqiExamNo(String tpqiExamNo) {
+        String sql = "SELECT exam_schedule_id FROM exam_schedule WHERE tpqi_exam_no = :tpqiExamNo LIMIT 1";
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("tpqiExamNo", tpqiExamNo);
+        try {
+            Object result = query.getSingleResult();
+            return result != null ? Long.parseLong(result.toString()) : null;
+        } catch (NoResultException e) {
+            return null;
+        }
     }
 }

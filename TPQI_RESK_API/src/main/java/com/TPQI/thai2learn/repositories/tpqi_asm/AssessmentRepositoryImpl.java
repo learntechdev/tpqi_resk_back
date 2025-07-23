@@ -25,6 +25,7 @@ public class AssessmentRepositoryImpl implements AssessmentRepository {
 
         String selectClause = """
             SELECT
+                aa.id,
                 aa.exam_schedule_id,
                 es.org_name,
                 es.occ_level_name,
@@ -70,9 +71,12 @@ public class AssessmentRepositoryImpl implements AssessmentRepository {
 
         for (Object[] row : results) {
             AssessmentInfoDTO dto = new AssessmentInfoDTO();
-            dto.setExamRound((String) row[0]);
-            dto.setCertifyingBody((String) row[1]);
-            String occLevelName = (String) row[2];
+            if (row[0] != null) {
+                dto.setId(((Number) row[0]).longValue());
+            }
+            dto.setExamRound((String) row[1]);
+            dto.setCertifyingBody((String) row[2]);
+            String occLevelName = (String) row[3];
             dto.setProfession(occLevelName);
             dto.setBranch("ไม่มีสาขา");
             dto.setOccupation(null);
@@ -101,13 +105,13 @@ public class AssessmentRepositoryImpl implements AssessmentRepository {
                     System.err.println("Could not parse occ_level_name: " + occLevelName + "; Error: " + e.getMessage());
                  }
             }
-            dto.setAssessmentTool((String) row[3]);
-            dto.setAssessmentPlace((String) row[4]);
+            dto.setAssessmentTool((String) row[4]);
+            dto.setAssessmentPlace((String) row[5]);
             if (row[5] instanceof Date) {
-                 dto.setExamDate((Date) row[5]);
+                 dto.setExamDate((Date) row[6]);
             }
             if (row[6] instanceof Date) {
-                 dto.setAssessmentDate((Date) row[6]);
+                 dto.setAssessmentDate((Date) row[7]);
             }
             dtos.add(dto);
         }

@@ -4,6 +4,7 @@ import java.util.Date;
 //สำหรับแสดงในหน้าแรกของผู้รับการประเมิน
 public class AssessmentInfoDTO {
 
+    private Long id;                    // PK
     private String examRound;           // รอบสอบ
     private String certifyingBody;      // องค์กรรับรอง
     private String profession;          // คุณวุฒิวิชาชีพ
@@ -14,6 +15,14 @@ public class AssessmentInfoDTO {
     private String assessmentPlace;     // สถานที่จัดสอบ
     private Date examDate;              // วันที่จัดสอบ
     private Date assessmentDate;        // วันที่ประเมิน
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     public String getExamRound() {
         return examRound;

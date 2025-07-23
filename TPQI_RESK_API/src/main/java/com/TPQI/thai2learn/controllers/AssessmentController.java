@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import com.TPQI.thai2learn.DTO.AssessmentFilterOptionsDTO;
 
 @RestController
 @RequestMapping("/api/assessments") 
@@ -35,5 +36,11 @@ public class AssessmentController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(assessmentsPage);
+    }
+
+     @GetMapping("/filters/{appId}")
+    public ResponseEntity<AssessmentFilterOptionsDTO> getAssessmentFilterOptions(@PathVariable String appId) { // <--- เพิ่ม @PathVariable
+        AssessmentFilterOptionsDTO filterOptions = assessmentService.getFilterOptionsByAppId(appId); // <--- เรียกใช้ method ใหม่
+        return ResponseEntity.ok(filterOptions);
     }
 }

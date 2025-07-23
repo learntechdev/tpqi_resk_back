@@ -8,7 +8,6 @@ import com.TPQI.thai2learn.DTO.EmailTemplateResponseDTO;
 import com.TPQI.thai2learn.DTO.EmailTemplateShortResponseDTO;
 import com.TPQI.thai2learn.services.ReskSettingsEmailTemplateService;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +21,6 @@ public class SystemSettingsController {
     private final ReskSettingsFileExtensionService fileExtensionService;
     private final ReskSettingsEmailTemplateService emailTemplateService;
 
-    @Autowired
     public SystemSettingsController(
             ReskSettingsFileExtensionService fileExtensionService,
             ReskSettingsEmailTemplateService emailTemplateService
