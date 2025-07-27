@@ -1,11 +1,9 @@
 package com.TPQI.thai2learn.services;
 
 import com.TPQI.thai2learn.DTO.*;
-import com.TPQI.thai2learn.entities.ext_data.CpApplication;
 import com.TPQI.thai2learn.entities.tpqi_asm.AssessmentApplicant;
 import com.TPQI.thai2learn.entities.tpqi_asm.AssessmentSubmissionDetails;
 import com.TPQI.thai2learn.entities.tpqi_asm.EvidenceCompetencyLink;
-import com.TPQI.thai2learn.repositories.ext_data.CpApplicationRepository;
 import com.TPQI.thai2learn.repositories.tpqi_asm.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,8 +21,6 @@ public class AssessmentSubmissionService {
 
     @Autowired
     private AssessmentApplicantRepository assessmentApplicantRepository;
-    @Autowired
-    private CpApplicationRepository cpApplicationRepository;
     @Autowired
     private AssessmentSubmissionDetailsRepository submissionDetailsRepository;
     @Autowired
@@ -50,8 +46,8 @@ public class AssessmentSubmissionService {
             throw new RuntimeException("ไม่พบรอบสอบที่ตรงกันสำหรับ tpqi_exam_no: " + tpqiExamNo);
         }
 
-        CpApplication cpApplication = cpApplicationRepository.findByApplicationCode(applicant.getAppId())
-                .orElse(new CpApplication());
+        String fullNameThai = applicant.getInitialName() + applicant.getName() + " " + applicant.getLastname();
+
 
         Optional<AssessmentSubmissionDetails> detailsOpt = submissionDetailsRepository.findByAssessmentApplicantId(assessmentApplicantId);
         Integer experienceYears = detailsOpt.map(AssessmentSubmissionDetails::getExperienceYears).orElse(null);
@@ -115,7 +111,7 @@ public class AssessmentSubmissionService {
         AssessmentSubmissionPageDTO pageDTO = new AssessmentSubmissionPageDTO();
         pageDTO.setAssessmentApplicantId(assessmentApplicantId);
         pageDTO.setApplicationCode(applicant.getAppId());
-        pageDTO.setFullNameThai(cpApplication.getFullnameThai());
+        pageDTO.setFullNameThai(fullNameThai); // << 5. ใช้ชื่อเต็มใหม่ที่เราสร้างขึ้น
         pageDTO.setProfessionName(applicant.getOccLevelName());
         pageDTO.setExperienceYears(experienceYears);
         pageDTO.setEvidenceFiles(fileStorageService.getFilesByApplicantId(assessmentApplicantId));
@@ -212,10 +208,8 @@ public class AssessmentSubmissionService {
                 .map(EvidenceCompetencyLink::getCompetencyCode)
                 .collect(Collectors.toList());
 
-        // ทำเครื่องหมาย node ที่ linked แล้ว
         updateCompetencyTreeLinks(competencyTree, linkedCompetencyCodes);
 
-        // กรองเฉพาะ node ที่ยังไม่ linked
         List<UocDTO> unlinkedCompetencyTree = competencyTree.stream()
             .map(uoc -> {
                 List<EocDTO> filteredEocs = uoc.getElementsOfCompetency().stream()

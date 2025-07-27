@@ -2,11 +2,9 @@ package com.TPQI.thai2learn.services;
 
 import com.TPQI.thai2learn.DTO.CredentialRequestDTO;
 import com.TPQI.thai2learn.DTO.LoginRequestDTO;
-import com.TPQI.thai2learn.entities.ext_data.CpApplication;
 import com.TPQI.thai2learn.entities.tpqi_asm.AssessmentApplicant;
 import com.TPQI.thai2learn.entities.tpqi_asm.ExamSchedule;
 import com.TPQI.thai2learn.entities.tpqi_asm.ReskUser;
-import com.TPQI.thai2learn.repositories.ext_data.CpApplicationRepository;
 import com.TPQI.thai2learn.repositories.tpqi_asm.AssessmentApplicantRepository;
 import com.TPQI.thai2learn.repositories.tpqi_asm.ExamScheduleRepository;
 import com.TPQI.thai2learn.repositories.tpqi_asm.ReskUserRepository;
@@ -27,9 +25,6 @@ import java.util.UUID;
 
 @Service
 public class AuthService {
-
-    @Autowired
-    private CpApplicationRepository cpApplicationRepository;
 
     @Autowired
     private AssessmentApplicantRepository assessmentApplicantRepository;
@@ -62,22 +57,24 @@ public class AuthService {
 
     @Transactional
     public String createUserByAppId(String appId) {
-        CpApplication cpApplicant = cpApplicationRepository.findByApplicationCode(appId)
-                .orElseThrow(() -> new RuntimeException("ไม่พบใบสมัคร (CP Application): " + appId));
+        AssessmentApplicant applicant = assessmentApplicantRepository.findByAppId(appId)
+                .orElseThrow(() -> new RuntimeException("ไม่พบข้อมูลผู้สมัคร (Assessment Applicant): " + appId));
 
         if (reskUserRepository.existsByAppId(appId)) {
             throw new RuntimeException("ผู้ใช้งานนี้มีบัญชีในระบบแล้ว");
         }
 
-        String username = cpApplicant.getApplicationCode();
+        String username = applicant.getAppId();
         String rawPassword = UUID.randomUUID().toString().substring(0, 8);
         String hashedPassword = passwordEncoder.encode(rawPassword);
+        
+        String fullName = applicant.getInitialName() + applicant.getName() + " " + applicant.getLastname();
 
         ReskUser newUser = new ReskUser();
         newUser.setAppId(username);
         newUser.setUsername(username);
         newUser.setPassword(hashedPassword);
-        newUser.setFullName(cpApplicant.getFullnameThai());
+        newUser.setFullName(fullName);
         newUser.setEmail(null); 
         newUser.setRole("ASSESSEE"); 
         newUser.setAccountExpirationDate(LocalDateTime.now().plusDays(30)); 

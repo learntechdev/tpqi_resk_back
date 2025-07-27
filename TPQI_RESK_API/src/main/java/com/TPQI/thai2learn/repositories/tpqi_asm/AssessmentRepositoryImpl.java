@@ -32,7 +32,7 @@ public class AssessmentRepositoryImpl implements AssessmentRepository {
                 st.tooltype_name,
                 es.place,
                 es.start_date,
-                es.end_date
+                a.assessment_date
             """;
         
         String fromClause = """
@@ -42,6 +42,8 @@ public class AssessmentRepositoryImpl implements AssessmentRepository {
                 exam_schedule es ON aa.exam_schedule_id = es.exam_schedule_id
             LEFT JOIN
                 settings_tooltype st ON aa.asm_tool_type = st.id
+            LEFT JOIN
+                assessment a ON aa.app_id = a.app_id
             """;
 
         StringBuilder whereClause = new StringBuilder(" WHERE aa.app_id = :appId ");
@@ -107,11 +109,11 @@ public class AssessmentRepositoryImpl implements AssessmentRepository {
             }
             dto.setAssessmentTool((String) row[4]);
             dto.setAssessmentPlace((String) row[5]);
-            if (row[5] instanceof Date) {
+            if (row[6] instanceof Date) {
                  dto.setExamDate((Date) row[6]);
             }
-            if (row[6] instanceof Date) {
-                 dto.setAssessmentDate((Date) row[7]);
+            if (row[7] instanceof Date) { 
+             dto.setAssessmentDate((Date) row[7]);
             }
             dtos.add(dto);
         }
