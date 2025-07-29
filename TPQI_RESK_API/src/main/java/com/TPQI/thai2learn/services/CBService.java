@@ -13,9 +13,7 @@ public class CBService {
     @Autowired
     private CBRepository cbRepository;
 
-    // แก้ไข method ให้รับ search และ status
-    public Page<CbApplicantSummaryDTO> getApplicantSummaries(String search, String status, Pageable pageable) {
-        // ส่งต่อไปให้ Repository
-        return cbRepository.findApplicantSummaries(search, status, pageable);
+    public Page<CbApplicantSummaryDTO> getApplicantSummaries(String orgCode, String search, String status, Pageable pageable) {
+        return cbRepository.findApplicantSummaries(orgCode, search, status, pageable);
     }
 }

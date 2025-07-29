@@ -26,6 +26,7 @@ import java.util.UUID;
 @Service
 public class AuthService {
 
+
     @Autowired
     private AssessmentApplicantRepository assessmentApplicantRepository;
 
@@ -67,7 +68,7 @@ public class AuthService {
         String username = applicant.getAppId();
         String rawPassword = UUID.randomUUID().toString().substring(0, 8);
         String hashedPassword = passwordEncoder.encode(rawPassword);
-        
+
         String fullName = applicant.getInitialName() + applicant.getName() + " " + applicant.getLastname();
 
         ReskUser newUser = new ReskUser();
@@ -91,7 +92,7 @@ public class AuthService {
 
         String appId = applicant.getAppId();
         String examScheduleId = applicant.getExamScheduleId();
-        
+
         if (examScheduleId == null || examScheduleId.trim().isEmpty()) {
             throw new RuntimeException("ผู้สมัครยังไม่ได้ถูกจัดสรรรอบสอบ กรุณาติดต่อเจ้าหน้าที่");
         }
@@ -99,7 +100,7 @@ public class AuthService {
         if (reskUserRepository.existsByAppId(appId)) {
             throw new RuntimeException("ท่านมีบัญชีผู้ใช้งานในระบบแล้ว กรุณาตรวจสอบอีเมลของท่าน หรือติดต่อเจ้าหน้าที่");
         }
-        
+
         ExamSchedule schedule = examScheduleRepository.findByTpqiExamNo(examScheduleId);
         if (schedule == null) {
             throw new RuntimeException("ไม่พบข้อมูลรอบสอบ: " + examScheduleId);

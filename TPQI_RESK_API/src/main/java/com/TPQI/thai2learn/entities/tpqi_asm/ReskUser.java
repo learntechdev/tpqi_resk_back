@@ -40,6 +40,9 @@ public class ReskUser {
 
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true; 
+
+    @Column(name = "org_code")
+    private String orgCode;
     
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -73,4 +76,7 @@ public class ReskUser {
 
     public String getExaminerCode() { return examinerCode; }
     public void setExaminerCode(String examinerCode) { this.examinerCode = examinerCode; }
+    
+    public String getOrgCode() { return orgCode; }
+    public void setOrgCode(String orgCode) { this.orgCode = orgCode; }
 }
