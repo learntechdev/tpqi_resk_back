@@ -4,7 +4,6 @@ import com.TPQI.thai2learn.DTO.AssessmentSubmissionPageDTO;
 import com.TPQI.thai2learn.DTO.CbApplicantSummaryDTO;
 import com.TPQI.thai2learn.DTO.EvidenceFileDTO;
 import com.TPQI.thai2learn.DTO.SubmissionRequestDTO;
-import com.TPQI.thai2learn.repositories.tpqi_asm.ReskUserRepository;
 import com.TPQI.thai2learn.services.AssessmentSubmissionService;
 import com.TPQI.thai2learn.services.CBService;
 import com.TPQI.thai2learn.services.FileStorageService;
@@ -15,17 +14,17 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import com.TPQI.thai2learn.entities.tpqi_asm.ReskUser;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
+import com.TPQI.thai2learn.DTO.CbExamRoundDTO;
 
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/cb")
+@PreAuthorize("hasAnyRole('ADMIN', 'CB_OFFICER')") 
 public class CBController {
 
     @Autowired
@@ -40,33 +39,34 @@ public class CBController {
     @Autowired
     private SubmissionService submissionService;
 
-    @Autowired
-    private ReskUserRepository reskUserRepository;
+    @GetMapping("/exam-rounds")
+    public ResponseEntity<Page<CbExamRoundDTO>> getExamRounds(
+            Authentication authentication,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<CbExamRoundDTO> examRounds = cbService.getExamRoundsForCbUser(authentication, search, pageable);
+        return ResponseEntity.ok(examRounds);
+    }
 
-    @GetMapping("/applicants")
-    @PreAuthorize("hasRole('cb_officer')")
-    public ResponseEntity<?> getApplicants(
+    @GetMapping("/exam-rounds/{tpqiExamNo}/applicants")
+    public ResponseEntity<Page<CbApplicantSummaryDTO>> getApplicantsByExamRound(
+            @PathVariable String tpqiExamNo,
             Authentication authentication,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        String username = authentication.getName();
-        ReskUser user = reskUserRepository.findByUsername(username).orElse(null);
-
-        if (user == null || user.getOrgCode() == null || user.getOrgCode().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "User is not a valid CB officer."));
-        }
-        String orgCode = user.getOrgCode();
-
         Pageable pageable = PageRequest.of(page, size);
-        Page<CbApplicantSummaryDTO> applicantsPage = cbService.getApplicantSummaries(orgCode, search, status, pageable);
+        Page<CbApplicantSummaryDTO> applicantsPage = cbService.getApplicantsByExamRound(authentication, tpqiExamNo, search, status, pageable);
         return ResponseEntity.ok(applicantsPage);
     }
 
+
     @GetMapping("/submission-statuses")
-    @PreAuthorize("hasRole('cb_officer')")
     public ResponseEntity<List<String>> getSubmissionStatuses() {
         List<String> statuses = List.of(
             "ยังไม่ได้ประเมิน", "ยังไม่ส่งประเมิน", "ส่งประเมินแล้ว",
@@ -76,38 +76,37 @@ public class CBController {
     }
 
     @GetMapping("/submission-details/{applicantId}")
-    @PreAuthorize("hasRole('cb_officer')")
-    public ResponseEntity<?> getSubmissionDetailsForCb(@PathVariable Long applicantId) {
+    public ResponseEntity<AssessmentSubmissionPageDTO> getSubmissionDetailsForCb(@PathVariable Long applicantId, Authentication authentication) {
+        cbService.verifyApplicantAccess(authentication, applicantId);
         AssessmentSubmissionPageDTO pageData = assessmentSubmissionService.getSubmissionPageDetails(applicantId);
         return ResponseEntity.ok(pageData);
     }
 
     @GetMapping("/files/{applicantId}")
-    @PreAuthorize("hasRole('cb_officer')")
-    public ResponseEntity<List<EvidenceFileDTO>> getFilesByApplicant(@PathVariable Long applicantId) {
+    public ResponseEntity<List<EvidenceFileDTO>> getFilesByApplicant(@PathVariable Long applicantId, Authentication authentication) {
+        cbService.verifyApplicantAccess(authentication, applicantId);
         List<EvidenceFileDTO> files = fileStorageService.getFilesByApplicantId(applicantId);
         return ResponseEntity.ok(files);
     }
 
     @PostMapping("/upload-file")
-    @PreAuthorize("hasRole('cb_officer')")
     public ResponseEntity<?> uploadFileForApplicant(
+            Authentication authentication,
             @RequestParam("file") MultipartFile file,
             @RequestParam("applicantId") Long applicantId,
             @RequestParam(value = "description", required = false) String description) {
+        cbService.verifyApplicantAccess(authentication, applicantId);
         fileStorageService.storeAndSave(file, applicantId, description);
         return ResponseEntity.ok(Map.of("message", "File uploaded successfully for applicant: " + applicantId));
     }
 
     @DeleteMapping("/delete-file/{fileId}")
-    @PreAuthorize("hasRole('cb_officer')")
     public ResponseEntity<?> deleteFileForApplicant(@PathVariable Long fileId) {
         fileStorageService.deleteFile(fileId);
         return ResponseEntity.ok(Map.of("message", "File deleted successfully!"));
     }
 
     @PostMapping("/save-submission")
-    @PreAuthorize("hasRole('cb_officer')")
     public ResponseEntity<?> saveSubmissionForApplicant(@RequestBody SubmissionRequestDTO submissionRequest) {
         submissionService.processSubmission(submissionRequest);
         return ResponseEntity.ok().body(Map.of("message", "Submission saved successfully!"));
