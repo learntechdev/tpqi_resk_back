@@ -20,6 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Autowired
@@ -48,7 +49,6 @@ public class SecurityConfig {
 
     @Configuration
     @Profile("prod")
-    @EnableMethodSecurity
     public class ProdSecurityConfig {
         @Bean
         public SecurityFilterChain securityFilterChainProd(HttpSecurity http) throws Exception {
@@ -58,14 +58,19 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                     .requestMatchers(
-                            "/api/auth/profile"
-                    ).authenticated()
-                    .requestMatchers(
                             "/api/auth/login", 
                             "/api/auth/request-credentials",
                             "/swagger-ui/**",
                             "/v3/api-docs/**"
                     ).permitAll()
+
+                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                    .requestMatchers("/api/cb/**").hasAnyRole("ADMIN", "CB_OFFICER")
+                    .requestMatchers("/api/examiner/**").hasAnyRole("ADMIN", "EXAMINER")
+                    .requestMatchers("/api/delegate/**").hasAnyRole("ADMIN", "DELEGATE")
+                    .requestMatchers("/api/auditor/**").hasAnyRole("ADMIN", "AUDITOR")
+                    .requestMatchers("/api/assessments/**", "/api/submission/**").hasRole("ASSESSEE")
+                    
                     .anyRequest().authenticated()
                 );
             http.authenticationProvider(authenticationProvider());

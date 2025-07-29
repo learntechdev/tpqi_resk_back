@@ -9,6 +9,7 @@ import com.TPQI.thai2learn.repositories.tpqi_asm.AssessmentApplicantRepository;
 import com.TPQI.thai2learn.repositories.tpqi_asm.ExamScheduleRepository;
 import com.TPQI.thai2learn.repositories.tpqi_asm.ReskUserRepository;
 import com.TPQI.thai2learn.security.JwtUtils;
+import com.TPQI.thai2learn.security.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,7 +26,6 @@ import java.util.UUID;
 
 @Service
 public class AuthService {
-
 
     @Autowired
     private AssessmentApplicantRepository assessmentApplicantRepository;
@@ -76,9 +76,9 @@ public class AuthService {
         newUser.setUsername(username);
         newUser.setPassword(hashedPassword);
         newUser.setFullName(fullName);
-        newUser.setEmail(null); 
-        newUser.setRole("ASSESSEE"); 
-        newUser.setAccountExpirationDate(LocalDateTime.now().plusDays(30)); 
+        newUser.setEmail(null);
+        newUser.setRole(Role.ROLE_ASSESSEE);
+        newUser.setAccountExpirationDate(LocalDateTime.now().plusDays(30));
         newUser.setActive(true);
 
         reskUserRepository.save(newUser);
@@ -128,8 +128,8 @@ public class AuthService {
         newUser.setPassword(hashedPassword);
         newUser.setFullName(applicant.getInitialName() + applicant.getName() + " " + applicant.getLastname());
         newUser.setEmail(requestDTO.getEmail());
-        newUser.setRole("ASSESSEE"); 
-        newUser.setAccountExpirationDate(expirationDate); 
+        newUser.setRole(Role.ROLE_ASSESSEE);
+        newUser.setAccountExpirationDate(expirationDate);
         newUser.setActive(true);
 
         reskUserRepository.save(newUser);

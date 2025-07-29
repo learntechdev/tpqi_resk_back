@@ -27,9 +27,9 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("ไม่พบผู้ใช้: " + username));
         
         System.out.println("--- user founded! the password is: " + user.getPassword());
-        System.out.println("--- user role is: " + user.getRole());
+        System.out.println("--- user role is: " + user.getRole().name());
 
-        GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole());
+        GrantedAuthority authority = new SimpleGrantedAuthority(user.getRole().name());
         List<GrantedAuthority> authorities = Collections.singletonList(authority);
 
         return new User(user.getUsername(), user.getPassword(), authorities);

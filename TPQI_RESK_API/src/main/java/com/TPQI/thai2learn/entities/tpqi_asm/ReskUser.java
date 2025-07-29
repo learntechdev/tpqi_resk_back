@@ -2,7 +2,9 @@ package com.TPQI.thai2learn.entities.tpqi_asm;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import com.TPQI.thai2learn.security.Role;
 @Entity
 @Table(name = "resk_users") 
 public class ReskUser {
@@ -33,7 +35,8 @@ public class ReskUser {
     private String examinerCode;
     
     @Column(nullable = false)
-    private String role;
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     @Column(name = "account_expiration_date") 
     private LocalDateTime accountExpirationDate; 
@@ -65,8 +68,8 @@ public class ReskUser {
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
     
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
 
     public LocalDateTime getAccountExpirationDate() { return accountExpirationDate; }
     public void setAccountExpirationDate(LocalDateTime accountExpirationDate) { this.accountExpirationDate = accountExpirationDate; }

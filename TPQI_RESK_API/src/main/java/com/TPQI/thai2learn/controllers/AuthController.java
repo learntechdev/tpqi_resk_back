@@ -8,7 +8,7 @@ import com.TPQI.thai2learn.DTO.UserContextDTO;
 import com.TPQI.thai2learn.entities.tpqi_asm.ReskUser;
 import com.TPQI.thai2learn.repositories.tpqi_asm.ReskUserRepository;
 import com.TPQI.thai2learn.services.AuthService;
-
+import com.TPQI.thai2learn.security.Role;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +42,7 @@ public class AuthController {
         }
     }
 
-     @PostMapping("/login")
+    @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequestDTO loginRequest) {
         try {
             String jwt = authService.login(loginRequest);
@@ -50,9 +50,8 @@ public class AuthController {
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             UserContextDTO userContext = buildUserContext(user);
-            String role = user.getRole();
 
-            JwtResponseDTO response = new JwtResponseDTO(jwt, user.getUsername(), role, userContext);
+            JwtResponseDTO response = new JwtResponseDTO(jwt, user.getUsername(), user.getRole(), userContext);
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
@@ -76,7 +75,7 @@ public class AuthController {
         
         Map<String, Object> userProfile = new java.util.HashMap<>();
         userProfile.put("username", user.getUsername());
-        userProfile.put("role", user.getRole());
+        userProfile.put("role", user.getRole().name()); 
         userProfile.put("userContext", userContext);
 
         return ResponseEntity.ok(userProfile);
@@ -84,13 +83,16 @@ public class AuthController {
 
     private UserContextDTO buildUserContext(ReskUser user) {
         IdentifierDTO identifier = null;
-        String role = user.getRole();
+        Role role = user.getRole();
 
-        if ("ASSESSEE".equalsIgnoreCase(role)) {
+        if (role == Role.ROLE_ASSESSEE) {
             identifier = new IdentifierDTO("applicant_id", user.getAssessmentApplicantId());
-        } else if ("EXAMINER".equalsIgnoreCase(role)) {
+        } else if (role == Role.ROLE_EXAMINER) {
             identifier = new IdentifierDTO("examiner_code", user.getExaminerCode());
+        } else if (role == Role.ROLE_CB_OFFICER) {
+            identifier = new IdentifierDTO("org_code", user.getOrgCode());
         }
+
 
         return new UserContextDTO(user.getFullName(), identifier);
     }
@@ -110,6 +112,4 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("error", errorMessage));
         }
     }
-
-    
 }
