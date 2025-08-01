@@ -1,5 +1,5 @@
 package com.TPQI.thai2learn.DTO;
-
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.util.Date;
 //สำหรับแสดงในหน้าแรกของผู้รับการประเมิน
 public class AssessmentInfoDTO {
@@ -13,9 +13,11 @@ public class AssessmentInfoDTO {
     private String level;               // ระดับ
     private String assessmentTool;      // เครื่องมือประเมิน
     private String assessmentPlace;     // สถานที่จัดสอบ
-    private Date examDate;              // วันที่จัดสอบ
-    private Date assessmentDate;        // วันที่ประเมิน
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm", timezone = "Asia/Bangkok")
+    private Date examDate;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm", timezone = "Asia/Bangkok")
+    private Date assessmentDate;
     public Long getId() {
         return id;
     }

@@ -2,6 +2,8 @@ package com.TPQI.thai2learn.DTO;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 public class CbApplicantSummaryDTO {
     
     private Long applicantId;
@@ -9,7 +11,9 @@ public class CbApplicantSummaryDTO {
     private String fullName;
     private String citizenId;
     private String submissionStatus;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm", timezone = "Asia/Bangkok")
     private Date examDate;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm", timezone = "Asia/Bangkok")
     private Date assessmentDate;
 
 

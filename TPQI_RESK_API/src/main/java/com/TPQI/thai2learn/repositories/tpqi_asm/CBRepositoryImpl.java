@@ -24,12 +24,13 @@ public class CBRepositoryImpl implements CBRepository {
     @Override
 public Page<CbApplicantSummaryDTO> findApplicantSummariesByExamRound(String tpqiExamNo, String search, String status, Pageable pageable) {
 
-    String fromClause = """
-        FROM assessment_applicant aa
-        LEFT JOIN assessment_submission_details asd ON aa.id = asd.assessment_applicant_id
-        LEFT JOIN exam_schedule es ON aa.exam_schedule_id = es.tpqi_exam_no
-        LEFT JOIN assessment a ON aa.app_id = a.app_id
-    """;
+        String fromClause = """
+            FROM assessment_applicant aa
+            LEFT JOIN assessment_submission_details asd ON aa.id = asd.assessment_applicant_id
+            LEFT JOIN exam_schedule es ON aa.exam_schedule_id = es.tpqi_exam_no
+            LEFT JOIN assessment a ON aa.app_id = a.app_id
+            LEFT JOIN resk_exam_schedule_dates rsd ON aa.exam_schedule_id = rsd.tpqi_exam_no
+        """;
 
     String whereClause = " WHERE aa.exam_schedule_id = :tpqiExamNo ";
     if (search != null && !search.trim().isEmpty()) {
@@ -51,7 +52,7 @@ public Page<CbApplicantSummaryDTO> findApplicantSummariesByExamRound(String tpqi
     long total = ((Number) countQuery.getSingleResult()).longValue();
 
     String dataSql = "SELECT aa.id, aa.app_id, aa.initial_name, aa.name, aa.lastname, aa.citizen_id, " +
-                     "asd.submission_status, es.start_date, a.assessment_date " +
+                     "asd.submission_status, rsd.actual_exam_date, a.assessment_date " +
                      fromClause + whereClause + " ORDER BY aa.id DESC";
 
     Query dataQuery = entityManager.createNativeQuery(dataSql);
@@ -110,8 +111,8 @@ public Page<CbApplicantSummaryDTO> findApplicantSummariesByExamRound(String tpqi
                 es.occ_level_name,
                 (SELECT st.tooltype_name FROM settings_tooltype st JOIN assessment_applicant aa ON st.id = aa.asm_tool_type WHERE aa.exam_schedule_id = es.tpqi_exam_no LIMIT 1) AS assessment_tool,
                 es.place,
-                es.start_date,
-                (SELECT a.assessment_date FROM assessment a JOIN assessment_applicant aa ON a.app_id = aa.app_id WHERE aa.exam_schedule_id = es.tpqi_exam_no LIMIT 1) AS assessment_date,
+                rsd.actual_exam_date,
+                rsd.actual_assessment_date,
                 (SELECT COUNT(app.id) FROM assessment_applicant app WHERE app.exam_schedule_id = es.tpqi_exam_no) as applicant_count
         """ + fromAndWhereClause + " ORDER BY es.start_date DESC";
 
