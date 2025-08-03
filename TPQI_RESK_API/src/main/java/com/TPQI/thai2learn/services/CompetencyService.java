@@ -85,6 +85,6 @@ public class CompetencyService {
             return new ArrayList<>();
         }
 
-        return competencyRepository.findRelatedQualificationsByTier2Title(tier2Title);
+        return competencyRepository.findRelatedQualificationsByTier2Title(tier2Title, occLevelId);
     }
 }

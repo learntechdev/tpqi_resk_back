@@ -7,7 +7,7 @@ import com.TPQI.thai2learn.entities.tpqi_asm.ExamSchedule;
 import com.TPQI.thai2learn.entities.tpqi_asm.ReskUser;
 import com.TPQI.thai2learn.repositories.tpqi_asm.AssessmentApplicantRepository;
 import com.TPQI.thai2learn.repositories.tpqi_asm.CBRepository;
-import com.TPQI.thai2learn.repositories.tpqi_asm.ExamScheduleRepository; // 💡 1. เพิ่ม Import
+import com.TPQI.thai2learn.repositories.tpqi_asm.ExamScheduleRepository;
 import com.TPQI.thai2learn.repositories.tpqi_asm.ReskUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -16,6 +16,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.TPQI.thai2learn.DTO.CbFilterOptionsDTO;
+import java.util.*;
 
 @Service
 public class CBService {
@@ -33,12 +35,11 @@ public class CBService {
     private AssessmentApplicantRepository assessmentApplicantRepository;
 
     @Transactional(readOnly = true)
-    public Page<CbExamRoundDTO> getExamRoundsForCbUser(Authentication authentication, String search, Pageable pageable) {
+    public Page<CbExamRoundDTO> getExamRoundsForCbUser(Authentication authentication, String search, String qualification, String level, String tool, Pageable pageable) {
         ReskUser user = getUserFromAuthentication(authentication);
         validateCbOfficer(user);
-        return cbRepository.findExamRoundsByOrgCode(user.getOrgCode(), search, pageable);
+        return cbRepository.findExamRoundsByOrgCode(user.getOrgCode(), search, qualification, level, tool, pageable);
     }
-
     @Transactional(readOnly = true)
     public Page<CbApplicantSummaryDTO> getApplicantsByExamRound(Authentication authentication, String tpqiExamNo, String search, String status, Pageable pageable) {
         ReskUser user = getUserFromAuthentication(authentication);
@@ -73,8 +74,47 @@ public class CBService {
 
     ExamSchedule examSchedule = examScheduleRepository.findByTpqiExamNo(applicant.getExamScheduleId());
 
-    if (examSchedule == null || !examSchedule.getOrgId().equals(cbUser.getOrgCode())) {
+        if (examSchedule == null || !examSchedule.getOrgId().equals(cbUser.getOrgCode())) {
         throw new AccessDeniedException("You do not have permission to access this applicant's data.");
+        }
     }
-}
+
+    @Transactional(readOnly = true)
+    public CbFilterOptionsDTO getFilterOptionsForCbUser(Authentication authentication) {
+        ReskUser user = getUserFromAuthentication(authentication);
+        validateCbOfficer(user);
+        String orgCode = user.getOrgCode();
+
+        CbFilterOptionsDTO options = new CbFilterOptionsDTO();
+        List<String> allOccLevelNames = cbRepository.findDistinctOccLevelNamesByOrgCode(orgCode);
+
+        Set<String> qualifications = new HashSet<>();
+        Set<String> levels = new HashSet<>();
+
+        for (String occLevelName : allOccLevelNames) {
+            if (occLevelName != null && !occLevelName.isEmpty()) {
+                String[] parts = occLevelName.split("ระดับ", 2);
+                qualifications.add(parts[0].trim());
+                if (parts.length > 1) {
+                    levels.add(parts[1].trim());
+                }
+            }
+        }
+
+        List<String> sortedQualifications = new ArrayList<>(qualifications);
+        Collections.sort(sortedQualifications);
+        options.setQualifications(sortedQualifications);
+
+        List<String> sortedLevels = new ArrayList<>(levels);
+        Collections.sort(sortedLevels);
+        options.setLevels(sortedLevels);
+
+        options.setAssessmentTools(cbRepository.findDistinctAssessmentToolsByOrgCode(orgCode));
+        options.setStatuses(List.of(
+            "ยังไม่ได้ประเมิน", "ยังไม่ส่งประเมิน", "ส่งประเมินแล้ว",
+            "เจ้าหน้าที่สอบขอหลักฐานเพิ่ม", "ประเมินผลแล้ว", "ยกเลิกผลการประเมินแล้ว"
+        ));
+
+        return options;
+    }
 }

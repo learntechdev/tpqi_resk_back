@@ -39,8 +39,8 @@ public class AssessmentController {
     }
 
      @GetMapping("/filters/{appId}")
-    public ResponseEntity<AssessmentFilterOptionsDTO> getAssessmentFilterOptions(@PathVariable String appId) { // <--- เพิ่ม @PathVariable
-        AssessmentFilterOptionsDTO filterOptions = assessmentService.getFilterOptionsByAppId(appId); // <--- เรียกใช้ method ใหม่
+    public ResponseEntity<AssessmentFilterOptionsDTO> getAssessmentFilterOptions(@PathVariable String appId) {
+        AssessmentFilterOptionsDTO filterOptions = assessmentService.getFilterOptionsByAppId(appId);
         return ResponseEntity.ok(filterOptions);
     }
 }

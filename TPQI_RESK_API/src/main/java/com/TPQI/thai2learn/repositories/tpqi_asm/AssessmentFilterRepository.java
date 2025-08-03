@@ -11,16 +11,16 @@ import java.util.List;
 public interface AssessmentFilterRepository extends JpaRepository<AssessmentApplicant, Long> {
 
     @Query(value = "SELECT DISTINCT es.occ_level_name FROM assessment_applicant aa " +
-                   "JOIN exam_schedule es ON aa.exam_schedule_id = es.exam_schedule_id " +
+                   "JOIN exam_schedule es ON aa.exam_schedule_id = es.tpqi_exam_no " +
                    "WHERE aa.app_id = :appId " +
                    "AND es.occ_level_name IS NOT NULL AND es.occ_level_name != '' " +
                    "ORDER BY es.occ_level_name", nativeQuery = true)
-    List<String> findDistinctOccLevelNamesByAppId(String appId); 
+    List<String> findDistinctOccLevelNamesByAppId(String appId);
 
     @Query(value = "SELECT DISTINCT st.tooltype_name FROM assessment_applicant aa " +
                    "JOIN settings_tooltype st ON aa.asm_tool_type = st.id " +
-                   "WHERE aa.app_id = :appId " + 
+                   "WHERE aa.app_id = :appId " +
                    "AND st.tooltype_name IS NOT NULL AND st.tooltype_name != '' " +
                    "ORDER BY st.tooltype_name", nativeQuery = true)
-    List<String> findDistinctAssessmentToolsByAppId(String appId); 
+    List<String> findDistinctAssessmentToolsByAppId(String appId);
 }

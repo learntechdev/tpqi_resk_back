@@ -5,24 +5,21 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
 import org.springframework.stereotype.Repository;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 @Repository
-public class AssessmentRepositoryImpl implements AssessmentRepository {
+public class AssessmentRepositoryImpl implements AssessmentRepositoryCustom {
 
     @PersistenceContext
     private EntityManager entityManager;
 
     @Override
     public Page<AssessmentInfoDTO> findAssessmentInfoByAppId(String appId, String search, Pageable pageable) {
-
         String fromClause = """
             FROM
                 assessment_applicant aa
@@ -35,12 +32,10 @@ public class AssessmentRepositoryImpl implements AssessmentRepository {
             LEFT JOIN
                 resk_exam_schedule_dates rsd ON aa.exam_schedule_id = rsd.tpqi_exam_no
             """;
-
         StringBuilder whereClause = new StringBuilder(" WHERE aa.app_id = :appId ");
         if (search != null && !search.trim().isEmpty()) {
             whereClause.append(" AND ( aa.exam_schedule_id LIKE :search OR es.org_name LIKE :search OR es.occ_level_name LIKE :search OR st.tooltype_name LIKE :search OR es.place LIKE :search ) ");
         }
-
         String countSql = "SELECT COUNT(*) " + fromClause + whereClause.toString();
         Query countQuery = entityManager.createNativeQuery(countSql);
         countQuery.setParameter("appId", appId);
@@ -48,7 +43,6 @@ public class AssessmentRepositoryImpl implements AssessmentRepository {
             countQuery.setParameter("search", "%" + search + "%");
         }
         long total = ((Number) countQuery.getSingleResult()).longValue();
-
         String dataSql = """
             SELECT
                 aa.id,
@@ -60,19 +54,14 @@ public class AssessmentRepositoryImpl implements AssessmentRepository {
                 rsd.actual_exam_date,
                 a.assessment_date
             """ + fromClause + whereClause.toString() + " ORDER BY rsd.actual_exam_date DESC, aa.id DESC";
-
         Query dataQuery = entityManager.createNativeQuery(dataSql, Object.class);
-        
         dataQuery.setParameter("appId", appId);
         if (search != null && !search.trim().isEmpty()) {
             dataQuery.setParameter("search", "%" + search + "%");
         }
-
         dataQuery.setFirstResult((int) pageable.getOffset());
         dataQuery.setMaxResults(pageable.getPageSize());
-
         List<Object[]> results = dataQuery.getResultList();
-        
         List<AssessmentInfoDTO> dtos = new ArrayList<>();
         for (Object[] row : results) {
             AssessmentInfoDTO dto = new AssessmentInfoDTO();
@@ -84,7 +73,6 @@ public class AssessmentRepositoryImpl implements AssessmentRepository {
             dto.setAssessmentPlace((String) row[5]);
             dto.setExamDate((Date) row[6]);
             dto.setAssessmentDate((Date) row[7]);
-
             if (occLevelName != null && !occLevelName.isEmpty()) {
                  try {
                     String textToParse = occLevelName;
@@ -108,7 +96,7 @@ public class AssessmentRepositoryImpl implements AssessmentRepository {
             }
             dtos.add(dto);
         }
-
         return new PageImpl<>(dtos, pageable, total);
     }
+
 }

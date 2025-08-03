@@ -3,10 +3,14 @@ package com.TPQI.thai2learn.repositories.tpqi_asm;
 import com.TPQI.thai2learn.DTO.CbApplicantSummaryDTO;
 import com.TPQI.thai2learn.DTO.CbExamRoundDTO;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface CBRepository {
     Page<CbApplicantSummaryDTO> findApplicantSummariesByExamRound(String tpqiExamNo, String search, String status, Pageable pageable);
-    Page<CbExamRoundDTO> findExamRoundsByOrgCode(String orgCode, String search, Pageable pageable);
+    Page<CbExamRoundDTO> findExamRoundsByOrgCode(String orgCode, String search, String qualification, String level, String tool, Pageable pageable);
+    List<String> findDistinctOccLevelNamesByOrgCode(String orgCode);
+    List<String> findDistinctAssessmentToolsByOrgCode(String orgCode);
 }

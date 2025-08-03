@@ -23,12 +23,19 @@ public class CompetencyRepositoryImpl implements CompetencyRepository {
 
     @Override
     public Long findOccLevelIdByExamScheduleId(String examScheduleId) {
+        Long pkId;
+        try {
+            pkId = Long.parseLong(examScheduleId);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+
         String sql = "SELECT occ_level_id FROM exam_schedule WHERE exam_schedule_id = :examScheduleId LIMIT 1";
         Query query = entityManager.createNativeQuery(sql);
-        query.setParameter("examScheduleId", examScheduleId);
+        query.setParameter("examScheduleId", pkId);
         try {
             Object result = query.getSingleResult();
-            return Long.parseLong(result.toString());
+            return result != null ? Long.parseLong(result.toString()) : null;
         } catch (NoResultException e) {
             return null;
         }
@@ -103,12 +110,13 @@ public class CompetencyRepositoryImpl implements CompetencyRepository {
     }
 
     @Override
-    public List<RelatedQualificationDTO> findRelatedQualificationsByTier2Title(String tier2Title) {
+    public List<RelatedQualificationDTO> findRelatedQualificationsByTier2Title(String tier2Title, Long excludeId) {
         String sql = "SELECT id, tier1_title, tier2_title, tier3_title, level_name " +
-                     "FROM standard_qualification " +
-                     "WHERE tier2_title = :tier2Title AND status = '1'";
+                    "FROM standard_qualification " +
+                    "WHERE tier2_title = :tier2Title AND status = '1' AND id != :excludeId";
         Query query = entityManager.createNativeQuery(sql);
         query.setParameter("tier2Title", tier2Title);
+        query.setParameter("excludeId", excludeId);
         List<Object[]> results = query.getResultList();
 
         return results.stream().map(row -> {
@@ -118,7 +126,6 @@ public class CompetencyRepositoryImpl implements CompetencyRepository {
                     (String) row[3],
                     (String) row[4]
             ).replaceAll("\\s+", " ").trim();
-
             return new RelatedQualificationDTO(((Number) row[0]).longValue(), name);
         }).collect(Collectors.toList());
     }

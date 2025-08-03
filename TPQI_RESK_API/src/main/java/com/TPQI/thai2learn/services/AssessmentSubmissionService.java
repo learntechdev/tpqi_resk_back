@@ -8,7 +8,7 @@ import com.TPQI.thai2learn.repositories.tpqi_asm.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.TPQI.thai2learn.entities.tpqi_asm.ReskRequestedEvidence;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -33,6 +33,8 @@ public class AssessmentSubmissionService {
     private CompetencyRepository competencyRepository;
     @Autowired
     private AssessmentPriorCertificateRepository priorCertificateRepository;
+    @Autowired
+    private ReskRequestedEvidenceRepository requestedEvidenceRepository;
 
     @Transactional(readOnly = true)
     public AssessmentSubmissionPageDTO getSubmissionPageDetails(Long assessmentApplicantId) {
@@ -111,7 +113,7 @@ public class AssessmentSubmissionService {
         AssessmentSubmissionPageDTO pageDTO = new AssessmentSubmissionPageDTO();
         pageDTO.setAssessmentApplicantId(assessmentApplicantId);
         pageDTO.setApplicationCode(applicant.getAppId());
-        pageDTO.setFullNameThai(fullNameThai); // << 5. ใช้ชื่อเต็มใหม่ที่เราสร้างขึ้น
+        pageDTO.setFullNameThai(fullNameThai);
         pageDTO.setProfessionName(applicant.getOccLevelName());
         pageDTO.setExperienceYears(experienceYears);
         pageDTO.setEvidenceFiles(fileStorageService.getFilesByApplicantId(assessmentApplicantId));
@@ -121,6 +123,21 @@ public class AssessmentSubmissionService {
         pageDTO.setHasPriorCertificate(!savedPriorCertificates.isEmpty());
         pageDTO.setUnlinkedCompetencies(simplifiedUnlinkedTree);
 
+        List<ReskRequestedEvidence> requestedList = requestedEvidenceRepository.findAllByAssessmentApplicantId(assessmentApplicantId);
+
+        Map<String, String> uocCodeToNameMap = competencyTree.stream()
+            .collect(Collectors.toMap(UocDTO::getUocCode, UocDTO::getUocName, (a, b) -> a));
+
+        List<RequestedEvidenceInfoDTO> requestedInfoList = requestedList.stream()
+            .map(req -> new RequestedEvidenceInfoDTO(
+                req.getUocCode(),
+                uocCodeToNameMap.getOrDefault(req.getUocCode(), req.getUocCode()),
+                req.getDetails()
+            ))
+            .collect(Collectors.toList());
+
+        pageDTO.setRequestedEvidences(requestedInfoList);
+          
         return pageDTO;
     }
 

@@ -1,10 +1,8 @@
 package com.TPQI.thai2learn.services;
 
 import com.TPQI.thai2learn.DTO.*;
-import com.TPQI.thai2learn.entities.tpqi_asm.AssessmentApplicant;
-import com.TPQI.thai2learn.entities.tpqi_asm.AssessmentPriorCertificate;
-import com.TPQI.thai2learn.entities.tpqi_asm.AssessmentSubmissionDetails;
-import com.TPQI.thai2learn.entities.tpqi_asm.EvidenceCompetencyLink;
+import com.TPQI.thai2learn.entities.tpqi_asm.*;
+import com.TPQI.thai2learn.entities.tpqi_asm.types.AssessmentStatus;
 import com.TPQI.thai2learn.repositories.tpqi_asm.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,7 +28,6 @@ public class SubmissionService {
     private CompetencyRepository competencyRepository;
     @Autowired
     private CompetencyService competencyService;
-    
     @Autowired
     private AssessmentEvidenceFileRepository evidenceFileRepository;
 
@@ -46,7 +43,15 @@ public class SubmissionService {
 
         if ("SUBMITTED".equalsIgnoreCase(request.getSubmissionStatus())) {
             validateSubmission(applicant, request.getEvidenceLinks());
+            applicant.setAssessmentStatus(AssessmentStatus.SUBMITTED);
+            assessmentApplicantRepository.save(applicant);
+        } else if ("DRAFT".equalsIgnoreCase(request.getSubmissionStatus())) {
+            if(applicant.getAssessmentStatus() == null) {
+                applicant.setAssessmentStatus(AssessmentStatus.PENDING_SUBMISSION);
+                assessmentApplicantRepository.save(applicant);
+            }
         }
+
 
         AssessmentSubmissionDetails details = submissionDetailsRepository.findByAssessmentApplicantId(applicantId)
                 .orElse(new AssessmentSubmissionDetails());
@@ -70,7 +75,7 @@ public class SubmissionService {
                 priorCertificateRepository.saveAll(priorCertsToSave);
             }
         }
-        
+
         if (request.getEvidenceDetails() != null) {
             for (EvidenceDetailDTO detail : request.getEvidenceDetails()) {
                 evidenceFileRepository.findById(detail.getFileId()).ifPresent(file -> {
@@ -106,15 +111,15 @@ public class SubmissionService {
 
         List<UocDTO> requiredUocs = competencyService.getCompetencyTreeByExamScheduleId(String.valueOf(examSchedulePkId));
         Set<String> requiredUocCodes = requiredUocs.stream().map(UocDTO::getUocCode).collect(Collectors.toSet());
-        
+
         if (evidenceLinks == null || evidenceLinks.isEmpty()) {
             throw new IllegalArgumentException("กรุณาแนบหลักฐานให้ครบทุกหน่วยสมรรถนะก่อนยืนยันการส่ง");
         }
-        
+
         Set<String> linkedUocCodes = evidenceLinks.stream()
-            .flatMap(link -> link.getCompetencyCodes().stream())
-            .filter(code -> requiredUocCodes.contains(code))
-            .collect(Collectors.toSet());
+                .flatMap(link -> link.getCompetencyCodes().stream())
+                .filter(code -> requiredUocCodes.contains(code))
+                .collect(Collectors.toSet());
 
         if (!linkedUocCodes.containsAll(requiredUocCodes)) {
              throw new IllegalArgumentException("ยังไม่ได้แนบหลักฐานสำหรับบางหน่วยสมรรถนะ กรุณาตรวจสอบและแนบหลักฐานให้ครบถ้วน");

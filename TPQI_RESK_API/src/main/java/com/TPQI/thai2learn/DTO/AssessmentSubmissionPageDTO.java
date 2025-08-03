@@ -19,6 +19,7 @@ public class AssessmentSubmissionPageDTO {
     private List<RelatedQualificationDTO> relatedQualifications;
 
     private List<UnlinkedUocDTO> unlinkedCompetencies;
+    private List<RequestedEvidenceInfoDTO> requestedEvidences;
 
     public List<UnlinkedUocDTO> getUnlinkedCompetencies() { return unlinkedCompetencies; }
     public void setUnlinkedCompetencies(List<UnlinkedUocDTO> unlinkedCompetencies) { this.unlinkedCompetencies = unlinkedCompetencies; }
@@ -102,4 +103,7 @@ public class AssessmentSubmissionPageDTO {
     public void setRelatedQualifications(List<RelatedQualificationDTO> relatedQualifications) {
         this.relatedQualifications = relatedQualifications;
     }
+
+    public List<RequestedEvidenceInfoDTO> getRequestedEvidences() { return requestedEvidences; }
+    public void setRequestedEvidences(List<RequestedEvidenceInfoDTO> requestedEvidences) { this.requestedEvidences = requestedEvidences; }
 }

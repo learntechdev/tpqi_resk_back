@@ -1,5 +1,6 @@
 package com.TPQI.thai2learn.entities.tpqi_asm;
 
+import com.TPQI.thai2learn.entities.tpqi_asm.types.AssessmentStatus;
 import jakarta.persistence.*;
 import java.util.Date;
 
@@ -50,7 +51,7 @@ public class AssessmentApplicant {
     private Date assessmentDate;
 
     @Column(name = "assessment_status")
-    private String assessmentStatus;
+    private AssessmentStatus assessmentStatus;
 
     @Column(name = "confirm_ass_status")
     private String confirmAssStatus;
@@ -160,11 +161,11 @@ public class AssessmentApplicant {
         this.assessmentDate = assessmentDate;
     }
 
-    public String getAssessmentStatus() {
+    public AssessmentStatus getAssessmentStatus() {
         return assessmentStatus;
     }
 
-    public void setAssessmentStatus(String assessmentStatus) {
+    public void setAssessmentStatus(AssessmentStatus assessmentStatus) {
         this.assessmentStatus = assessmentStatus;
     }
 

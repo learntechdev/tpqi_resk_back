@@ -18,7 +18,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import com.TPQI.thai2learn.DTO.CbExamRoundDTO;
-
+import com.TPQI.thai2learn.DTO.CbFilterOptionsDTO;
+import com.TPQI.thai2learn.entities.tpqi_asm.AssessmentEvidenceFile;
 import java.util.List;
 import java.util.Map;
 
@@ -43,12 +44,21 @@ public class CBController {
     public ResponseEntity<Page<CbExamRoundDTO>> getExamRounds(
             Authentication authentication,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String qualification,
+            @RequestParam(required = false) String level,
+            @RequestParam(required = false) String tool,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         Pageable pageable = PageRequest.of(page, size);
-        Page<CbExamRoundDTO> examRounds = cbService.getExamRoundsForCbUser(authentication, search, pageable);
+        Page<CbExamRoundDTO> examRounds = cbService.getExamRoundsForCbUser(authentication, search, qualification, level, tool, pageable);
         return ResponseEntity.ok(examRounds);
+    }
+
+    @GetMapping("/exam-rounds/filters")
+    public ResponseEntity<CbFilterOptionsDTO> getExamRoundFilters(Authentication authentication) {
+        CbFilterOptionsDTO filterOptions = cbService.getFilterOptionsForCbUser(authentication);
+        return ResponseEntity.ok(filterOptions);
     }
 
     @GetMapping("/exam-rounds/{tpqiExamNo}/applicants")
@@ -95,9 +105,18 @@ public class CBController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("applicantId") Long applicantId,
             @RequestParam(value = "description", required = false) String description) {
+
         cbService.verifyApplicantAccess(authentication, applicantId);
-        fileStorageService.storeAndSave(file, applicantId, description);
-        return ResponseEntity.ok(Map.of("message", "File uploaded successfully for applicant: " + applicantId));
+
+        AssessmentEvidenceFile savedFile = fileStorageService.storeAndSave(file, applicantId, description);
+
+        Map<String, Object> response = Map.of(
+            "message", "File uploaded successfully for applicant: " + applicantId,
+            "fileId", savedFile.getId(),
+            "filePath", savedFile.getFilePath()
+        );
+
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/delete-file/{fileId}")
