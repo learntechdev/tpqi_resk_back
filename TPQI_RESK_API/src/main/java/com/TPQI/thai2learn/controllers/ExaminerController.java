@@ -17,7 +17,6 @@ import com.TPQI.thai2learn.DTO.AssessmentSubmissionPageDTO;
 import com.TPQI.thai2learn.services.AssessmentSubmissionService;
 import com.TPQI.thai2learn.DTO.EvidenceFileDTO;
 import com.TPQI.thai2learn.services.FileStorageService;
-import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 
@@ -89,13 +88,4 @@ public class ExaminerController {
         return ResponseEntity.ok(files);
     }
 
-    @PostMapping("/upload-file")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EXAMINER')")
-    public ResponseEntity<?> uploadFileForApplicant(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("applicantId") Long applicantId,
-            @RequestParam(value = "description", required = false) String description) {
-        fileStorageService.storeAndSave(file, applicantId, description);
-        return ResponseEntity.ok(Map.of("message", "File uploaded successfully"));
-    }
 }
