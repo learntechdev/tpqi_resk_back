@@ -3,6 +3,7 @@ package com.TPQI.thai2learn.services;
 import com.TPQI.thai2learn.DTO.AssessmentInfoDTO;
 import com.TPQI.thai2learn.DTO.CbApplicantSummaryDTO;
 import com.TPQI.thai2learn.DTO.ExaminerAssessmentDTO;
+import com.TPQI.thai2learn.DTO.ExaminerDraftDTO;
 import com.TPQI.thai2learn.entities.tpqi_asm.*;
 import com.TPQI.thai2learn.entities.tpqi_asm.types.AssessmentStatus;
 import com.TPQI.thai2learn.repositories.tpqi_asm.*;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -21,7 +23,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class ExaminerService {
-
     private final ExaminerRepository examinerRepository;
     private final AppointExaminerRepository appointExaminerRepository;
     private final ReskUserRepository reskUserRepository;
@@ -30,6 +31,7 @@ public class ExaminerService {
     private final AssessmentApplicantRepository assessmentApplicantRepository;
     private final AssessmentSubmissionDetailsRepository submissionDetailsRepository;
     private final ReskRequestedEvidenceRepository requestedEvidenceRepository;
+    private final ExaminerEvidenceLinkRepository examinerEvidenceLinkRepository;
 
     public ExaminerService(ExaminerRepository examinerRepository,
                            AppointExaminerRepository appointExaminerRepository,
@@ -38,7 +40,8 @@ public class ExaminerService {
                            AssessmentRepository assessmentRepository,
                            AssessmentApplicantRepository assessmentApplicantRepository,
                            AssessmentSubmissionDetailsRepository submissionDetailsRepository,
-                           ReskRequestedEvidenceRepository requestedEvidenceRepository) {
+                           ReskRequestedEvidenceRepository requestedEvidenceRepository,
+                           ExaminerEvidenceLinkRepository examinerEvidenceLinkRepository) {
         this.examinerRepository = examinerRepository;
         this.appointExaminerRepository = appointExaminerRepository;
         this.reskUserRepository = reskUserRepository;
@@ -47,11 +50,11 @@ public class ExaminerService {
         this.assessmentApplicantRepository = assessmentApplicantRepository;
         this.submissionDetailsRepository = submissionDetailsRepository;
         this.requestedEvidenceRepository = requestedEvidenceRepository;
+        this.examinerEvidenceLinkRepository = examinerEvidenceLinkRepository;
     }
 
-
     @Transactional(readOnly = true)
-    public Page<AssessmentInfoDTO> getExamRoundsForExaminer(Authentication authentication, String search, Pageable pageable) {
+    public Page<AssessmentInfoDTO> getExamRoundsForExaminer(Authentication authentication, String search, String qualification, String level, String tool, Pageable pageable) {
         ReskUser user = getUserFromAuthentication(authentication);
         validateExaminer(user);
 
@@ -60,7 +63,7 @@ public class ExaminerService {
             return Page.empty();
         }
 
-        return examinerRepository.findExamRoundsByExamCodes(examCodes, search, pageable);
+        return examinerRepository.findExamRoundsByExamCodes(examCodes, search, qualification, level, tool, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -90,27 +93,37 @@ public class ExaminerService {
         }
 
         AssessmentStatus newStatus = mapStringToAssessmentStatus(assessmentDTO.getResultStatus());
+        String resultText = mapCodeToThaiText(assessmentDTO.getResultStatus());
 
-        saveOrUpdateAssessmentRecord(applicant, assessmentDTO);
+        saveOrUpdateAssessmentRecord(applicant, assessmentDTO, resultText);
 
         applicant.setAssessmentStatus(newStatus);
         assessmentApplicantRepository.save(applicant);
 
-        updateSubmissionDetailsStatus(applicant.getId(), assessmentDTO.getResultStatus());
+        updateSubmissionDetailsStatus(applicant.getId(), resultText);
 
         handleRequestedEvidences(examiner, applicant, assessmentDTO);
     }
 
     private AssessmentStatus mapStringToAssessmentStatus(String statusString) {
         return switch (statusString) {
-            case "ผ่าน" -> AssessmentStatus.EVALUATED_PASS;
-            case "ไม่ผ่าน" -> AssessmentStatus.EVALUATED_FAIL;
-            case "ขอหลักฐานเพิ่มเติม" -> AssessmentStatus.MORE_EVIDENCE_REQUESTED;
-            default -> throw new IllegalArgumentException("Invalid assessment status string: " + statusString);
+            case "PASS" -> AssessmentStatus.EVALUATED_PASS;
+            case "FAIL" -> AssessmentStatus.EVALUATED_FAIL;
+            case "MORE_EVIDENCE" -> AssessmentStatus.MORE_EVIDENCE_REQUESTED;
+            default -> throw new IllegalArgumentException("Invalid assessment status code: " + statusString);
         };
     }
 
-    private void saveOrUpdateAssessmentRecord(AssessmentApplicant applicant, ExaminerAssessmentDTO assessmentDTO) {
+    private String mapCodeToThaiText(String statusCode) {
+        return switch (statusCode) {
+            case "PASS" -> "ผ่าน";
+            case "FAIL" -> "ไม่ผ่าน";
+            case "MORE_EVIDENCE" -> "ขอหลักฐานเพิ่มเติม";
+            default -> statusCode;
+        };
+    }
+
+    private void saveOrUpdateAssessmentRecord(AssessmentApplicant applicant, ExaminerAssessmentDTO assessmentDTO, String resultText) {
         Optional<Assessment> existingAssessment = assessmentRepository.findByAppId(applicant.getAppId());
         Assessment assessment = existingAssessment.orElse(new Assessment());
 
@@ -119,7 +132,7 @@ public class ExaminerService {
         assessment.setCitizenId(applicant.getCitizenId());
         assessment.setToolType(applicant.getAsmToolType());
         assessment.setAssessmentDate(new Date());
-        assessment.setExamResult(assessmentDTO.getResultStatus());
+        assessment.setExamResult(resultText);
         assessment.setRecomment(assessmentDTO.getComments());
         assessment.setTotalScore(0);
         assessment.setFullScore(0);
@@ -128,18 +141,17 @@ public class ExaminerService {
         assessmentRepository.save(assessment);
     }
 
-    private void updateSubmissionDetailsStatus(Long applicantId, String status) {
+    private void updateSubmissionDetailsStatus(Long applicantId, String resultText) {
         AssessmentSubmissionDetails submissionDetails = submissionDetailsRepository.findByAssessmentApplicantId(applicantId)
                 .orElse(new AssessmentSubmissionDetails());
         submissionDetails.setAssessmentApplicantId(applicantId);
-        submissionDetails.setSubmissionStatus(status);
+        submissionDetails.setSubmissionStatus(resultText);
         submissionDetailsRepository.save(submissionDetails);
     }
 
     private void handleRequestedEvidences(ReskUser examiner, AssessmentApplicant applicant, ExaminerAssessmentDTO assessmentDTO) {
-        if ("ขอหลักฐานเพิ่มเติม".equals(assessmentDTO.getResultStatus())) {
+        if ("MORE_EVIDENCE".equals(assessmentDTO.getResultStatus())) {
             if (assessmentDTO.getRequestedEvidences() != null && !assessmentDTO.getRequestedEvidences().isEmpty()) {
-
                 List<ReskRequestedEvidence> evidencesToSave = assessmentDTO.getRequestedEvidences().stream().map(req -> {
                     ReskRequestedEvidence evidence = new ReskRequestedEvidence();
                     evidence.setAssessmentApplicantId(applicant.getId());
@@ -150,9 +162,77 @@ public class ExaminerService {
                     evidence.setFulfilled(false);
                     return evidence;
                 }).collect(Collectors.toList());
-
                 requestedEvidenceRepository.saveAll(evidencesToSave);
             }
+        }
+    }
+
+    @Transactional
+    public void saveAssessmentDraft(Authentication authentication, ExaminerDraftDTO draftDTO) {
+        Long applicantId = draftDTO.getApplicantId();
+        ReskUser examiner = getUserFromAuthentication(authentication);
+        validateExaminer(examiner);
+
+        AssessmentApplicant applicant = assessmentApplicantRepository.findById(applicantId)
+                .orElseThrow(() -> new RuntimeException("Applicant not found: " + applicantId));
+
+        examinerEvidenceLinkRepository.deleteAllByAssessmentApplicantId(applicantId);
+        if (draftDTO.getEvidenceLinks() != null && !draftDTO.getEvidenceLinks().isEmpty()) {
+            List<ExaminerEvidenceLink> newLinks = new ArrayList<>();
+            for (var linkDTO : draftDTO.getEvidenceLinks()) {
+                if (linkDTO.getCompetencyCodes() == null) continue;
+                for (String competencyCode : linkDTO.getCompetencyCodes()) {
+                    ExaminerEvidenceLink link = new ExaminerEvidenceLink();
+                    link.setAssessmentApplicantId(applicantId);
+                    link.setEvidenceFileId(linkDTO.getFileId());
+                    link.setCompetencyCode(competencyCode);
+                    newLinks.add(link);
+                }
+            }
+            if (!newLinks.isEmpty()) {
+                examinerEvidenceLinkRepository.saveAll(newLinks);
+            }
+        }
+
+        Assessment assessment = assessmentRepository.findByAppId(applicant.getAppId())
+                .orElseGet(() -> {
+                    Assessment a = new Assessment();
+                    a.setAppId(applicant.getAppId());
+                    a.setExamScheduleId(applicant.getExamScheduleId());
+                    a.setCitizenId(applicant.getCitizenId());
+                    a.setAssessmentDate(new Date());
+                    a.setTotalScore(0);
+                    a.setFullScore(0);
+                    a.setExamPercentScore(BigDecimal.ZERO);
+                    a.setType("2");
+                    return a;
+                });
+        assessment.setRecomment(draftDTO.getComments());
+        if (draftDTO.getResultStatus() != null && !draftDTO.getResultStatus().isBlank()) {
+            assessment.setExamResult(mapCodeToThaiText(draftDTO.getResultStatus()));
+        } else if (assessment.getExamResult() == null) {
+            assessment.setExamResult("Draft");
+        }
+        assessmentRepository.save(assessment);
+
+        requestedEvidenceRepository.deleteAllByAssessmentApplicantId(applicantId);
+        if ("MORE_EVIDENCE".equals(draftDTO.getResultStatus())
+                && draftDTO.getRequestedEvidences() != null
+                && !draftDTO.getRequestedEvidences().isEmpty()) {
+
+            List<ReskRequestedEvidence> toSave = draftDTO.getRequestedEvidences().stream()
+                    .map(req -> {
+                        ReskRequestedEvidence e = new ReskRequestedEvidence();
+                        e.setAssessmentApplicantId(applicantId);
+                        e.setUocCode(req.getUocCode());
+                        e.setDetails(req.getDetails());
+                        e.setRequestedByExaminerCode(examiner.getExaminerCode());
+                        e.setRequestedAt(new Date());
+                        e.setFulfilled(false);
+                        return e;
+                    })
+                    .collect(Collectors.toList());
+            requestedEvidenceRepository.saveAll(toSave);
         }
     }
 

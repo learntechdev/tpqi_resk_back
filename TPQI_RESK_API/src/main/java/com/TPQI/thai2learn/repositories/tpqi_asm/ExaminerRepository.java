@@ -7,5 +7,5 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface ExaminerRepository {
-    Page<AssessmentInfoDTO> findExamRoundsByExamCodes(List<String> examCodes, String search, Pageable pageable);
+    Page<AssessmentInfoDTO> findExamRoundsByExamCodes(List<String> examCodes, String search, String qualification, String level, String tool, Pageable pageable);
 }

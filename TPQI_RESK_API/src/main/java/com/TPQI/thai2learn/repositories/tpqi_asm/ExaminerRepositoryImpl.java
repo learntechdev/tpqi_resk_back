@@ -20,8 +20,8 @@ public class ExaminerRepositoryImpl implements ExaminerRepository {
     private EntityManager entityManager;
 
     @Override
-    public Page<AssessmentInfoDTO> findExamRoundsByExamCodes(List<String> examCodes, String search, Pageable pageable) {
-        
+    public Page<AssessmentInfoDTO> findExamRoundsByExamCodes(List<String> examCodes, String search, String qualification, String level, String tool, Pageable pageable) {
+
         String fromClause = """
             FROM exam_schedule es
             LEFT JOIN assessment_applicant aa ON es.tpqi_exam_no = aa.exam_schedule_id
@@ -30,17 +30,29 @@ public class ExaminerRepositoryImpl implements ExaminerRepository {
             LEFT JOIN resk_exam_schedule_dates rsd ON es.tpqi_exam_no = rsd.tpqi_exam_no
         """;
 
-        String whereClause = " WHERE es.tpqi_exam_no IN (:examCodes) ";
+        StringBuilder whereClause = new StringBuilder(" WHERE es.tpqi_exam_no IN (:examCodes) ");
         if (search != null && !search.trim().isEmpty()) {
-            whereClause += " AND ( es.tpqi_exam_no LIKE :search OR es.org_name LIKE :search OR es.occ_level_name LIKE :search )";
+            whereClause.append(" AND ( es.tpqi_exam_no LIKE :search OR es.org_name LIKE :search OR es.occ_level_name LIKE :search )");
         }
-        
-        String countSql = "SELECT COUNT(DISTINCT es.exam_schedule_id) " + fromClause + whereClause;
+        if (qualification != null && !qualification.trim().isEmpty()) {
+            whereClause.append(" AND es.occ_level_name LIKE :qualification ");
+        }
+        if (level != null && !level.trim().isEmpty()) {
+            whereClause.append(" AND es.occ_level_name LIKE :level ");
+        }
+        if (tool != null && !tool.trim().isEmpty()) {
+            whereClause.append(" AND st.tooltype_name = :tool ");
+        }
+
+        String countSql = "SELECT COUNT(DISTINCT es.exam_schedule_id) " + fromClause + whereClause.toString();
         Query countQuery = entityManager.createNativeQuery(countSql);
+
         countQuery.setParameter("examCodes", examCodes);
-        if (search != null && !search.trim().isEmpty()) {
-            countQuery.setParameter("search", "%" + search + "%");
-        }
+        if (search != null && !search.trim().isEmpty()) countQuery.setParameter("search", "%" + search + "%");
+        if (qualification != null && !qualification.trim().isEmpty()) countQuery.setParameter("qualification", qualification + "%");
+        if (level != null && !level.trim().isEmpty()) countQuery.setParameter("level", "%ระดับ " + level);
+        if (tool != null && !tool.trim().isEmpty()) countQuery.setParameter("tool", tool);
+
         long total = ((Number) countQuery.getSingleResult()).longValue();
 
         String dataSql = """
@@ -49,20 +61,21 @@ public class ExaminerRepositoryImpl implements ExaminerRepository {
                 st.tooltype_name, es.place,
                 rsd.actual_exam_date,
                 rsd.actual_assessment_date
-        """ + fromClause + whereClause + " ORDER BY rsd.actual_exam_date DESC, es.exam_schedule_id DESC"; // 💡 1. แก้ไข Query ให้สมบูรณ์
+        """ + fromClause + whereClause.toString() + " ORDER BY rsd.actual_exam_date DESC, es.exam_schedule_id DESC";
 
         Query dataQuery = entityManager.createNativeQuery(dataSql, Object.class);
-        
+
         dataQuery.setParameter("examCodes", examCodes);
-        if (search != null && !search.trim().isEmpty()) {
-            dataQuery.setParameter("search", "%" + search + "%");
-        }
+        if (search != null && !search.trim().isEmpty()) dataQuery.setParameter("search", "%" + search + "%");
+        if (qualification != null && !qualification.trim().isEmpty()) dataQuery.setParameter("qualification", qualification + "%");
+        if (level != null && !level.trim().isEmpty()) dataQuery.setParameter("level", "%ระดับ " + level);
+        if (tool != null && !tool.trim().isEmpty()) dataQuery.setParameter("tool", tool);
 
         dataQuery.setFirstResult((int) pageable.getOffset());
         dataQuery.setMaxResults(pageable.getPageSize());
 
         List<Object[]> results = dataQuery.getResultList();
-        
+
         List<AssessmentInfoDTO> dtos = new ArrayList<>();
         for (Object[] row : results) {
             AssessmentInfoDTO dto = new AssessmentInfoDTO();
@@ -103,7 +116,6 @@ public class ExaminerRepositoryImpl implements ExaminerRepository {
             }
             dtos.add(dto);
         }
-
         return new PageImpl<>(dtos, pageable, total);
     }
 }

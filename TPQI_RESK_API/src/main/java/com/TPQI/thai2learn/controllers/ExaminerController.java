@@ -3,6 +3,7 @@ package com.TPQI.thai2learn.controllers;
 import com.TPQI.thai2learn.DTO.AssessmentInfoDTO;
 import com.TPQI.thai2learn.DTO.CbApplicantSummaryDTO;
 import com.TPQI.thai2learn.DTO.ExaminerAssessmentDTO;
+import com.TPQI.thai2learn.DTO.ExaminerDraftDTO;
 import com.TPQI.thai2learn.services.ExaminerService;
 import jakarta.validation.Valid;
 
@@ -41,11 +42,14 @@ public class ExaminerController {
     public ResponseEntity<Page<AssessmentInfoDTO>> getExamRounds(
             Authentication authentication,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String qualification,
+            @RequestParam(required = false) String level,
+            @RequestParam(required = false) String tool,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         
         Pageable pageable = PageRequest.of(page, size);
-        Page<AssessmentInfoDTO> result = examinerService.getExamRoundsForExaminer(authentication, search, pageable);
+        Page<AssessmentInfoDTO> result = examinerService.getExamRoundsForExaminer(authentication, search, qualification, level, tool, pageable);
         return ResponseEntity.ok(result);
     }
 
@@ -86,6 +90,13 @@ public class ExaminerController {
     public ResponseEntity<List<EvidenceFileDTO>> getFilesByApplicant(@PathVariable Long applicantId) {
         List<EvidenceFileDTO> files = fileStorageService.getFilesByApplicantId(applicantId);
         return ResponseEntity.ok(files);
+    }
+
+    @PostMapping("/save-assessment-draft")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EXAMINER')")
+    public ResponseEntity<?> saveAssessmentDraft(Authentication authentication, @RequestBody ExaminerDraftDTO draftDTO) {
+        examinerService.saveAssessmentDraft(authentication, draftDTO);
+        return ResponseEntity.ok(Map.of("message", "Assessment draft saved successfully."));
     }
 
 }
