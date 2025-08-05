@@ -23,11 +23,20 @@ public class CompetencyRepositoryImpl implements CompetencyRepository {
 
     @Override
     public Long findOccLevelIdByExamScheduleId(String examScheduleId) {
-        
-        String sql = "SELECT occ_level_id FROM exam_schedule WHERE tpqi_exam_no = :tpqiExamNo LIMIT 1";
-        Query query = entityManager.createNativeQuery(sql);
-        query.setParameter("tpqiExamNo", examScheduleId);
-        
+        String sql;
+        Query query;
+
+        try {
+            Long pkId = Long.parseLong(examScheduleId);
+            sql = "SELECT occ_level_id FROM exam_schedule WHERE exam_schedule_id = :pkId LIMIT 1";
+            query = entityManager.createNativeQuery(sql);
+            query.setParameter("pkId", pkId);
+        } catch (NumberFormatException e) {
+            sql = "SELECT occ_level_id FROM exam_schedule WHERE tpqi_exam_no = :tpqiExamNo LIMIT 1";
+            query = entityManager.createNativeQuery(sql);
+            query.setParameter("tpqiExamNo", examScheduleId);
+        }
+
         try {
             Object result = query.getSingleResult();
             return result != null ? Long.parseLong(result.toString()) : null;
@@ -106,18 +115,48 @@ public class CompetencyRepositoryImpl implements CompetencyRepository {
 
     @Override
     public List<RelatedQualificationDTO> findRelatedQualificationsByTier2Title(String tier2Title, Long excludeId) {
-        String sql = "SELECT id, tier1_title, tier2_title, tier3_title, level_name " +
-                    "FROM standard_qualification " +
-                    "WHERE tier2_title = :tier2Title AND status = '1' AND id != :excludeId";
+        String getDetailsSql = "SELECT tier1_title, tier2_title, tier3_title FROM standard_qualification WHERE id = :excludeId LIMIT 1";
+        Query detailsQuery = entityManager.createNativeQuery(getDetailsSql);
+        detailsQuery.setParameter("excludeId", excludeId);
+        
+        Object[] details;
+        try {
+            details = (Object[]) detailsQuery.getSingleResult();
+        } catch (NoResultException e) {
+            return new ArrayList<>();
+        }
+        
+        String tier1Title = (String) details[0];
+        String currentTier2Title = (String) details[1];
+        String tier3Title = (String) details[2];
+
+        String sql;
+        if (currentTier2Title != null && !currentTier2Title.trim().isEmpty()) {
+            sql = "SELECT id, tier1_title, tier2_title, tier3_title, level_name " +
+                "FROM standard_qualification " +
+                "WHERE tier1_title = :tier1Title AND tier2_title = :tier2Title AND status = '1' AND id != :excludeId";
+        } else {
+            sql = "SELECT id, tier1_title, tier2_title, tier3_title, level_name " +
+                "FROM standard_qualification " +
+                "WHERE tier1_title = :tier1Title AND tier3_title = :tier3Title AND (tier2_title IS NULL OR tier2_title = '') AND status = '1' AND id != :excludeId";
+        }
+
         Query query = entityManager.createNativeQuery(sql);
-        query.setParameter("tier2Title", tier2Title);
         query.setParameter("excludeId", excludeId);
+        query.setParameter("tier1Title", tier1Title);
+        
+        if (currentTier2Title != null && !currentTier2Title.trim().isEmpty()) {
+            query.setParameter("tier2Title", currentTier2Title);
+        } else {
+            query.setParameter("tier3Title", tier3Title);
+        }
+        
         List<Object[]> results = query.getResultList();
 
         return results.stream().map(row -> {
             String name = String.join(" ",
                     (String) row[1],
-                    (String) row[2],
+                    (row[2] != null && !((String)row[2]).isEmpty()) ? (String)row[2] : "",
                     (String) row[3],
                     (String) row[4]
             ).replaceAll("\\s+", " ").trim();

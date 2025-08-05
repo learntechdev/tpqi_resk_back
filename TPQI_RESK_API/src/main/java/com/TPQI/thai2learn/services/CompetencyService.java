@@ -79,11 +79,7 @@ public class CompetencyService {
             return new ArrayList<>();
         }
 
-        String tier2Title = competencyRepository.findTier2TitleByOccLevelId(occLevelId);
-
-        if (tier2Title == null || tier2Title.trim().isEmpty()) {
-            return new ArrayList<>();
-        }
+        String tier2Title = competencyRepository.findTier2TitleByOccLevelId(occLevelId); 
 
         return competencyRepository.findRelatedQualificationsByTier2Title(tier2Title, occLevelId);
     }

@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -33,13 +34,13 @@ public class CompetencyController {
     }
 
 
-    @GetMapping("/related-qualifications/{examScheduleId}")
+    @GetMapping("/related-qualifications")
     public ResponseEntity<List<RelatedQualificationDTO>> getRelatedQualifications(
-            @PathVariable String examScheduleId) {
+            @RequestParam("id") String examScheduleId) {
         
         List<RelatedQualificationDTO> qualifications = competencyService.getRelatedQualifications(examScheduleId);
 
-        if (qualifications.isEmpty()) {
+        if (qualifications == null || qualifications.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
         
