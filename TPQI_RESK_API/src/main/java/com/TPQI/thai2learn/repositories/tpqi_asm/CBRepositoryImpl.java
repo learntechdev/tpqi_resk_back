@@ -31,49 +31,66 @@ public class CBRepositoryImpl implements CBRepository {
             LEFT JOIN resk_exam_schedule_dates rsd ON aa.exam_schedule_id = rsd.tpqi_exam_no
         """;
 
-        String whereClause = " WHERE aa.exam_schedule_id = :tpqiExamNo ";
+        StringBuilder whereClause = new StringBuilder(" WHERE aa.exam_schedule_id = :tpqiExamNo ");
+
         if (search != null && !search.trim().isEmpty()) {
-            whereClause += " AND (CONCAT(aa.name, ' ', aa.lastname) LIKE :search OR aa.citizen_id LIKE :search) ";
+            whereClause.append(" AND (CONCAT(aa.initial_name, aa.name, ' ', aa.lastname) LIKE :search OR aa.citizen_id LIKE :search) ");
         }
+
         if (status != null && !status.trim().isEmpty()) {
-            try {
-                int statusCode = AssessmentStatus.valueOf(status).getCode();
-                whereClause += " AND aa.assessment_status = :status ";
-            } catch (IllegalArgumentException e) {
+            boolean isValidStatus = true;
+            switch (status) {
+                case "ยังไม่ได้ประเมิน":
+                    whereClause.append(" AND aa.assessment_status = ").append(AssessmentStatus.JUST_START.getCode());
+                    break;
+                case "ยังไม่ส่งประเมิน":
+                    whereClause.append(" AND aa.assessment_status = ").append(AssessmentStatus.PENDING_SUBMISSION.getCode());
+                    break;
+                case "ส่งประเมินแล้ว":
+                    whereClause.append(" AND aa.assessment_status = ").append(AssessmentStatus.SUBMITTED.getCode());
+                    break;
+                case "เจ้าหน้าที่สอบขอหลักฐานเพิ่ม":
+                    whereClause.append(" AND aa.assessment_status = ").append(AssessmentStatus.MORE_EVIDENCE_REQUESTED.getCode());
+                    break;
+                case "ประเมินผลแล้ว":
+                    whereClause.append(" AND aa.assessment_status IN (")
+                            .append(AssessmentStatus.EVALUATED_PASS.getCode()).append(", ")
+                            .append(AssessmentStatus.EVALUATED_FAIL.getCode()).append(") ");
+                    break;
+                case "ยกเลิกผลการประเมินแล้ว":
+                    whereClause.append(" AND aa.assessment_status = ").append(AssessmentStatus.CANCELLED.getCode());
+                    break;
+                default:
+                    isValidStatus = false;
+                    break;
+            }
+
+            if (!isValidStatus) {
+                whereClause.append(" AND 1=0 ");
             }
         }
 
         String countSql = "SELECT COUNT(aa.id) " + fromClause + whereClause;
         Query countQuery = entityManager.createNativeQuery(countSql);
         countQuery.setParameter("tpqiExamNo", tpqiExamNo);
+
         if (search != null && !search.trim().isEmpty()) {
             countQuery.setParameter("search", "%" + search + "%");
         }
-        if (status != null && !status.trim().isEmpty()) {
-             try {
-                int statusCode = AssessmentStatus.valueOf(status).getCode();
-                countQuery.setParameter("status", statusCode);
-            } catch (IllegalArgumentException e) {
-            }
-        }
+        
         long total = ((Number) countQuery.getSingleResult()).longValue();
 
         String dataSql = "SELECT aa.id, aa.app_id, aa.initial_name, aa.name, aa.lastname, aa.citizen_id, " +
-                         "aa.assessment_status, rsd.actual_exam_date, a.assessment_date " +
-                         fromClause + whereClause + " ORDER BY aa.id DESC";
+                        "aa.assessment_status, rsd.actual_exam_date, a.assessment_date " +
+                        fromClause + whereClause + " ORDER BY aa.id DESC";
 
         Query dataQuery = entityManager.createNativeQuery(dataSql);
         dataQuery.setParameter("tpqiExamNo", tpqiExamNo);
+
         if (search != null && !search.trim().isEmpty()) {
             dataQuery.setParameter("search", "%" + search + "%");
         }
-        if (status != null && !status.trim().isEmpty()) {
-            try {
-                int statusCode = AssessmentStatus.valueOf(status).getCode();
-                dataQuery.setParameter("status", statusCode);
-            } catch (IllegalArgumentException e) {
-            }
-        }
+
         dataQuery.setFirstResult((int) pageable.getOffset());
         dataQuery.setMaxResults(pageable.getPageSize());
 
@@ -88,13 +105,12 @@ public class CBRepositoryImpl implements CBRepository {
             dto.setFullName((initialName + firstName + " " + lastName).trim());
             dto.setCitizenId((String) row[5]);
             
-            String statusDisplay = "ยังไม่ส่งประเมิน";
+            String statusDisplay = "ยังไม่ได้ประเมิน";
             if (row[6] != null) {
                 try {
-                    int statusCode = Integer.parseInt(row[6].toString());
-                    statusDisplay = AssessmentStatus.of(statusCode).getDisplayName();
-                } catch (IllegalArgumentException e) {
-                }
+                    int sCode = Integer.parseInt(row[6].toString());
+                    statusDisplay = AssessmentStatus.of(sCode).getDisplayName();
+                } catch (IllegalArgumentException e) {}
             }
             dto.setSubmissionStatus(statusDisplay);
             
@@ -109,7 +125,6 @@ public class CBRepositoryImpl implements CBRepository {
     @Override
     public Page<CbExamRoundDTO> findExamRoundsByOrgCode(String orgCode, String search, String qualification, String level, String tool, Pageable pageable) {
 
-        // 💡 เราจะใช้ LEFT JOIN กับ assessment_applicant เพื่อให้สามารถกรองตาม tool ได้
         String fromAndWhereClause = """
             FROM exam_schedule es
             LEFT JOIN resk_exam_schedule_dates rsd ON es.tpqi_exam_no = rsd.tpqi_exam_no
@@ -123,11 +138,9 @@ public class CBRepositoryImpl implements CBRepository {
             dynamicWhere.append(" AND (es.tpqi_exam_no LIKE :search OR es.occ_level_name LIKE :search OR es.place LIKE :search) ");
         }
         if (qualification != null && !qualification.trim().isEmpty()) {
-            // กรอง `occ_level_name` ที่ "ขึ้นต้นด้วย" qualification ที่เลือก
             dynamicWhere.append(" AND es.occ_level_name LIKE :qualification ");
         }
         if (level != null && !level.trim().isEmpty()) {
-            // กรอง `occ_level_name` ที่ "ลงท้ายด้วย" level ที่เลือก
             dynamicWhere.append(" AND es.occ_level_name LIKE :level ");
         }
         if (tool != null && !tool.trim().isEmpty()) {

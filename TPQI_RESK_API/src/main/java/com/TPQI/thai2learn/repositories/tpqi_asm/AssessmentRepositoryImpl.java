@@ -5,6 +5,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
 import org.springframework.stereotype.Repository;
+import com.TPQI.thai2learn.entities.tpqi_asm.types.AssessmentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -52,7 +53,8 @@ public class AssessmentRepositoryImpl implements AssessmentRepositoryCustom {
                 st.tooltype_name,
                 es.place,
                 rsd.actual_exam_date,
-                a.assessment_date
+                a.assessment_date,
+                aa.assessment_status 
             """ + fromClause + whereClause.toString() + " ORDER BY rsd.actual_exam_date DESC, aa.id DESC";
         Query dataQuery = entityManager.createNativeQuery(dataSql, Object.class);
         dataQuery.setParameter("appId", appId);
@@ -73,6 +75,17 @@ public class AssessmentRepositoryImpl implements AssessmentRepositoryCustom {
             dto.setAssessmentPlace((String) row[5]);
             dto.setExamDate((Date) row[6]);
             dto.setAssessmentDate((Date) row[7]);
+
+            String statusDisplay = AssessmentStatus.JUST_START.getDisplayName();
+            Object statusObj = row[8];
+            if (statusObj != null) {
+                try {
+                    int statusCode = Integer.parseInt(statusObj.toString());
+                    statusDisplay = AssessmentStatus.of(statusCode).getDisplayName();
+                } catch (Exception e) {
+                }
+            }
+            dto.setSubmissionStatus(statusDisplay);
             if (occLevelName != null && !occLevelName.isEmpty()) {
                  try {
                     String textToParse = occLevelName;

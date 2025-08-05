@@ -9,6 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.TPQI.thai2learn.entities.tpqi_asm.ReskRequestedEvidence;
+import com.TPQI.thai2learn.entities.tpqi_asm.ExaminerEvidenceLink;
+import com.TPQI.thai2learn.entities.tpqi_asm.Assessment;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -35,6 +38,10 @@ public class AssessmentSubmissionService {
     private AssessmentPriorCertificateRepository priorCertificateRepository;
     @Autowired
     private ReskRequestedEvidenceRepository requestedEvidenceRepository;
+    @Autowired
+    private ExaminerEvidenceLinkRepository examinerEvidenceLinkRepository;
+    @Autowired
+    private AssessmentRepository assessmentRepository;
 
     @Transactional(readOnly = true)
     public AssessmentSubmissionPageDTO getSubmissionPageDetails(Long assessmentApplicantId) {
@@ -122,6 +129,30 @@ public class AssessmentSubmissionService {
         pageDTO.setSavedPriorCertificates(savedPriorCertificates);
         pageDTO.setHasPriorCertificate(!savedPriorCertificates.isEmpty());
         pageDTO.setUnlinkedCompetencies(simplifiedUnlinkedTree);
+
+        Optional<Assessment> assessmentOpt = assessmentRepository.findByAppId(applicant.getAppId());
+        if (assessmentOpt.isPresent()) {
+            pageDTO.setExaminerComments(assessmentOpt.get().getRecomment());
+            pageDTO.setExaminerResultStatus(assessmentOpt.get().getExamResult());
+        }
+
+        List<ExaminerEvidenceLink> examinerLinks = examinerEvidenceLinkRepository.findAllByAssessmentApplicantId(assessmentApplicantId);
+
+        Map<Long, List<String>> groupedByFileId = examinerLinks.stream()
+                .collect(Collectors.groupingBy(
+                        ExaminerEvidenceLink::getEvidenceFileId,
+                        Collectors.mapping(ExaminerEvidenceLink::getCompetencyCode, Collectors.toList())
+                ));
+
+        List<EvidenceLinkDTO> examinerEvidenceLinksDTOs = new ArrayList<>();
+        for (Map.Entry<Long, List<String>> entry : groupedByFileId.entrySet()) {
+            EvidenceLinkDTO linkDTO = new EvidenceLinkDTO();
+            linkDTO.setFileId(entry.getKey());
+            linkDTO.setCompetencyCodes(entry.getValue());
+            examinerEvidenceLinksDTOs.add(linkDTO);
+        }
+
+        pageDTO.setExaminerEvidenceLinks(examinerEvidenceLinksDTOs);
 
         List<ReskRequestedEvidence> requestedList = requestedEvidenceRepository.findAllByAssessmentApplicantId(assessmentApplicantId);
 

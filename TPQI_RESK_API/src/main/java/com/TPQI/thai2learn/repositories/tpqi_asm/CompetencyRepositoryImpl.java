@@ -23,16 +23,11 @@ public class CompetencyRepositoryImpl implements CompetencyRepository {
 
     @Override
     public Long findOccLevelIdByExamScheduleId(String examScheduleId) {
-        Long pkId;
-        try {
-            pkId = Long.parseLong(examScheduleId);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-
-        String sql = "SELECT occ_level_id FROM exam_schedule WHERE exam_schedule_id = :examScheduleId LIMIT 1";
+        
+        String sql = "SELECT occ_level_id FROM exam_schedule WHERE tpqi_exam_no = :tpqiExamNo LIMIT 1";
         Query query = entityManager.createNativeQuery(sql);
-        query.setParameter("examScheduleId", pkId);
+        query.setParameter("tpqiExamNo", examScheduleId);
+        
         try {
             Object result = query.getSingleResult();
             return result != null ? Long.parseLong(result.toString()) : null;

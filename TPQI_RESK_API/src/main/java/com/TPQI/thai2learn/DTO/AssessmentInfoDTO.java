@@ -1,23 +1,26 @@
 package com.TPQI.thai2learn.DTO;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.util.Date;
-//สำหรับแสดงในหน้าแรกของผู้รับการประเมิน
 public class AssessmentInfoDTO {
 
-    private Long id;                    // PK
-    private String examRound;           // รอบสอบ
-    private String certifyingBody;      // องค์กรรับรอง
-    private String profession;          // คุณวุฒิวิชาชีพ
-    private String branch;              // สาขา
-    private String occupation;          // อาชีพ
-    private String level;               // ระดับ
-    private String assessmentTool;      // เครื่องมือประเมิน
-    private String assessmentPlace;     // สถานที่จัดสอบ
+    private Long id;
+    private String examRound;
+    private String certifyingBody;
+    private String profession;
+    private String branch;
+    private String occupation;
+    private String level;
+    private String assessmentTool;
+    private String assessmentPlace;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm", timezone = "Asia/Bangkok")
     private Date examDate;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm", timezone = "Asia/Bangkok")
     private Date assessmentDate;
+
+    private String submissionStatus;
+
+
     public Long getId() {
         return id;
     }
@@ -104,5 +107,13 @@ public class AssessmentInfoDTO {
 
     public void setAssessmentDate(Date assessmentDate) {
         this.assessmentDate = assessmentDate;
+    }
+
+    public String getSubmissionStatus() {
+        return submissionStatus;
+    }
+
+    public void setSubmissionStatus(String submissionStatus) {
+        this.submissionStatus = submissionStatus;
     }
 }

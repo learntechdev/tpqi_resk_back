@@ -42,11 +42,11 @@ public class SubmissionService {
                 .orElseThrow(() -> new IllegalArgumentException("Applicant not found with id: " + applicantId));
 
         if ("SUBMITTED".equalsIgnoreCase(request.getSubmissionStatus())) {
-            validateSubmission(applicant, request.getEvidenceLinks());
-            applicant.setAssessmentStatus(AssessmentStatus.SUBMITTED);
-            assessmentApplicantRepository.save(applicant);
+        validateSubmission(applicant, request.getEvidenceLinks());
+        applicant.setAssessmentStatus(AssessmentStatus.SUBMITTED);
+        assessmentApplicantRepository.save(applicant);
         } else if ("DRAFT".equalsIgnoreCase(request.getSubmissionStatus())) {
-            if(applicant.getAssessmentStatus() == null) {
+            if (applicant.getAssessmentStatus() == null || applicant.getAssessmentStatus() == AssessmentStatus.JUST_START) {
                 applicant.setAssessmentStatus(AssessmentStatus.PENDING_SUBMISSION);
                 assessmentApplicantRepository.save(applicant);
             }

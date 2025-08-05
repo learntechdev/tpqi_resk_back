@@ -3,12 +3,13 @@ package com.TPQI.thai2learn.entities.tpqi_asm.types;
 import java.util.stream.Stream;
 
 public enum AssessmentStatus {
-    PENDING_SUBMISSION(0, "ยังไม่ส่งประเมิน"),
-    SUBMITTED(1, "ส่งประเมินแล้ว"),
-    MORE_EVIDENCE_REQUESTED(2, "ขอหลักฐานเพิ่มเติม"),
-    EVALUATED_PASS(3, "ประเมินผลแล้ว (ผ่าน)"),
-    EVALUATED_FAIL(4, "ประเมินผลแล้ว (ไม่ผ่าน)"),
-    CANCELLED(5, "ยกเลิกผลการประเมินแล้ว");
+    JUST_START(0, "ยังไม่ได้ประเมิน"),
+    PENDING_SUBMISSION(1, "ยังไม่ส่งประเมิน"),
+    SUBMITTED(2, "ส่งประเมินแล้ว"),
+    MORE_EVIDENCE_REQUESTED(3, "เจ้าหน้าที่สอบขอหลักฐานเพิ่ม"),
+    EVALUATED_PASS(4, "ประเมินผลแล้ว (ผ่าน)"),
+    EVALUATED_FAIL(5, "ประเมินผลแล้ว (ไม่ผ่าน)"),
+    CANCELLED(6, "ยกเลิกผลการประเมินแล้ว");
 
     private final int code;
     private final String displayName;

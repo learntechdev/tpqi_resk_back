@@ -8,19 +8,19 @@ public class AssessmentSubmissionPageDTO {
     private String applicationCode;
     private String fullNameThai;
     private String professionName;
-
     private Integer experienceYears;
     private Boolean hasPriorCertificate;
     private List<EvidenceFileDTO> evidenceFiles;
     private List<PriorCertificateDTO> savedPriorCertificates;
-
-
     private List<UocDTO> competencyTree;
     private List<RelatedQualificationDTO> relatedQualifications;
-
     private List<UnlinkedUocDTO> unlinkedCompetencies;
     private List<RequestedEvidenceInfoDTO> requestedEvidences;
+    private List<EvidenceLinkDTO> examinerEvidenceLinks;
+    private String examinerComments;
+    private String examinerResultStatus;
 
+    
     public List<UnlinkedUocDTO> getUnlinkedCompetencies() { return unlinkedCompetencies; }
     public void setUnlinkedCompetencies(List<UnlinkedUocDTO> unlinkedCompetencies) { this.unlinkedCompetencies = unlinkedCompetencies; }
 
@@ -106,4 +106,23 @@ public class AssessmentSubmissionPageDTO {
 
     public List<RequestedEvidenceInfoDTO> getRequestedEvidences() { return requestedEvidences; }
     public void setRequestedEvidences(List<RequestedEvidenceInfoDTO> requestedEvidences) { this.requestedEvidences = requestedEvidences; }
+
+    public List<EvidenceLinkDTO> getExaminerEvidenceLinks() {
+        return examinerEvidenceLinks;
+    }
+
+    public void setExaminerEvidenceLinks(List<EvidenceLinkDTO> examinerEvidenceLinks) {
+        this.examinerEvidenceLinks = examinerEvidenceLinks;
+    }
+
+    public String getExaminerComments() {
+        return examinerComments;
+    }
+
+    public void setExaminerComments(String examinerComments) {
+        this.examinerComments = examinerComments;
+    }
+
+    public String getExaminerResultStatus() { return examinerResultStatus; }
+    public void setExaminerResultStatus(String examinerResultStatus) { this.examinerResultStatus = examinerResultStatus; }
 }
