@@ -61,9 +61,9 @@ public class CBController {
         return ResponseEntity.ok(filterOptions);
     }
 
-    @GetMapping("/exam-rounds/{tpqiExamNo}/applicants")
+    @GetMapping("/applicants")
     public ResponseEntity<Page<CbApplicantSummaryDTO>> getApplicantsByExamRound(
-            @PathVariable String tpqiExamNo,
+            @RequestParam String tpqiExamNo,
             Authentication authentication,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,

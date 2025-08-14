@@ -4,6 +4,7 @@ import com.TPQI.thai2learn.DTO.AssessmentInfoDTO;
 import com.TPQI.thai2learn.DTO.CbApplicantSummaryDTO;
 import com.TPQI.thai2learn.DTO.ExaminerAssessmentDTO;
 import com.TPQI.thai2learn.DTO.ExaminerDraftDTO;
+import com.TPQI.thai2learn.DTO.ExaminerFilterOptionsDTO;
 import com.TPQI.thai2learn.services.ExaminerService;
 import jakarta.validation.Valid;
 
@@ -53,10 +54,10 @@ public class ExaminerController {
         return ResponseEntity.ok(result);
     }
 
-    @GetMapping("/exam-rounds/{tpqiExamNo}/applicants")
+    @GetMapping("/applicants")
     @PreAuthorize("hasAnyRole('ADMIN', 'EXAMINER')")
     public ResponseEntity<Page<CbApplicantSummaryDTO>> getApplicantsByExamRound(
-            @PathVariable String tpqiExamNo,
+            @RequestParam String tpqiExamNo,
             Authentication authentication,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,
@@ -97,6 +98,13 @@ public class ExaminerController {
     public ResponseEntity<?> saveAssessmentDraft(Authentication authentication, @RequestBody ExaminerDraftDTO draftDTO) {
         examinerService.saveAssessmentDraft(authentication, draftDTO);
         return ResponseEntity.ok(Map.of("message", "Assessment draft saved successfully."));
+    }
+
+    @GetMapping("/exam-rounds/filters")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EXAMINER')")
+    public ResponseEntity<ExaminerFilterOptionsDTO> getExamRoundFilters(Authentication authentication) {
+        ExaminerFilterOptionsDTO filterOptions = examinerService.getFilterOptionsForExaminer(authentication);
+        return ResponseEntity.ok(filterOptions);
     }
 
 }

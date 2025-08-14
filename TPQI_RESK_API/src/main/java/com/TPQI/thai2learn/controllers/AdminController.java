@@ -1,8 +1,6 @@
 package com.TPQI.thai2learn.controllers;
 
-import com.TPQI.thai2learn.DTO.UserCreationDTO;
 import com.TPQI.thai2learn.DTO.UserDTO;
-import com.TPQI.thai2learn.DTO.UserRoleUpdateDTO;
 import com.TPQI.thai2learn.security.Role;
 import com.TPQI.thai2learn.services.AdminService;
 import jakarta.validation.Valid;
@@ -11,10 +9,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.TPQI.thai2learn.DTO.AdminUserDTO;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -33,26 +31,15 @@ public class AdminController {
 
     @PostMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserDTO> createStaffUser(@Valid @RequestBody UserCreationDTO userCreationDTO) {
-        UserDTO createdUser = adminService.createStaffUser(userCreationDTO);
+    public ResponseEntity<UserDTO> createStaffUser(@Valid @RequestBody AdminUserDTO userDTO) {
+        UserDTO createdUser = adminService.createStaffUser(userDTO);
         return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
     }
 
-    @PutMapping("/users/{userId}/role")
+    @PutMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserDTO> updateUserRole(@PathVariable Long userId, @Valid @RequestBody UserRoleUpdateDTO roleUpdateDTO) {
-        UserDTO updatedUser = adminService.updateUserRole(userId, roleUpdateDTO.getRole());
-        return ResponseEntity.ok(updatedUser);
-    }
-
-    @PutMapping("/users/{userId}/status")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserDTO> updateUserStatus(@PathVariable Long userId, @RequestBody Map<String, Boolean> statusMap) {
-        Boolean isActive = statusMap.get("isActive");
-        if (isActive == null) {
-            return ResponseEntity.badRequest().build();
-        }
-        UserDTO updatedUser = adminService.updateUserStatus(userId, isActive);
+    public ResponseEntity<UserDTO> updateStaffUser(@PathVariable Long userId, @Valid @RequestBody AdminUserDTO userDTO) {
+        UserDTO updatedUser = adminService.updateStaffUser(userId, userDTO);
         return ResponseEntity.ok(updatedUser);
     }
 

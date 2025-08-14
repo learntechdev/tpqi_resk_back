@@ -1,6 +1,14 @@
 package com.TPQI.thai2learn.entities.tpqi_asm.types;
 
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import com.TPQI.thai2learn.DTO.StatusDTO;
 
 public enum AssessmentStatus {
     JUST_START(0, "ยังไม่ได้ประเมิน"),
@@ -32,5 +40,26 @@ public enum AssessmentStatus {
                 .filter(s -> s.getCode() == code)
                 .findFirst()
                 .orElseThrow(IllegalArgumentException::new);
+    }
+
+    public static List<StatusDTO> getDistinctStatusDTOs() {
+        Map<String, StatusDTO> map = Arrays.stream(values())
+                .map(status -> {
+                    String displayName = switch (status) {
+                        case EVALUATED_PASS, EVALUATED_FAIL -> "ประเมินผลแล้ว";
+                        default -> status.getDisplayName();
+                    };
+                    return new StatusDTO(status.getCode(), displayName);
+                })
+                .collect(Collectors.toMap(
+                        StatusDTO::getDisplayName,
+                        dto -> dto,
+                        (existing, replacement) -> existing,
+                        LinkedHashMap::new
+                ));
+
+        return map.values().stream()
+                .sorted(Comparator.comparing(StatusDTO::getKey))
+                .collect(Collectors.toList());
     }
 }

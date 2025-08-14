@@ -70,7 +70,7 @@ public class CBRepositoryImpl implements CBRepository {
             }
         }
 
-        String countSql = "SELECT COUNT(aa.id) " + fromClause + whereClause;
+        String countSql = "SELECT COUNT(DISTINCT aa.id) " + fromClause + whereClause;
         Query countQuery = entityManager.createNativeQuery(countSql);
         countQuery.setParameter("tpqiExamNo", tpqiExamNo);
 
@@ -80,7 +80,7 @@ public class CBRepositoryImpl implements CBRepository {
         
         long total = ((Number) countQuery.getSingleResult()).longValue();
 
-        String dataSql = "SELECT aa.id, aa.app_id, aa.initial_name, aa.name, aa.lastname, aa.citizen_id, " +
+        String dataSql = "SELECT DISTINCT aa.id, aa.app_id, aa.initial_name, aa.name, aa.lastname, aa.citizen_id, " +
                         "aa.assessment_status, rsd.actual_exam_date, a.assessment_date " +
                         fromClause + whereClause + " ORDER BY aa.id DESC";
 

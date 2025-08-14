@@ -4,6 +4,7 @@ import com.TPQI.thai2learn.DTO.AssessmentInfoDTO;
 import com.TPQI.thai2learn.DTO.CbApplicantSummaryDTO;
 import com.TPQI.thai2learn.DTO.ExaminerAssessmentDTO;
 import com.TPQI.thai2learn.DTO.ExaminerDraftDTO;
+import com.TPQI.thai2learn.DTO.ExaminerFilterOptionsDTO;
 import com.TPQI.thai2learn.entities.tpqi_asm.*;
 import com.TPQI.thai2learn.entities.tpqi_asm.types.AssessmentStatus;
 import com.TPQI.thai2learn.repositories.tpqi_asm.*;
@@ -13,9 +14,12 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -246,5 +250,45 @@ public class ExaminerService {
         if (user.getExaminerCode() == null || user.getExaminerCode().isEmpty()) {
             throw new AccessDeniedException("User is not a valid examiner.");
         }
+    }
+
+    @Transactional(readOnly = true)
+    public ExaminerFilterOptionsDTO getFilterOptionsForExaminer(Authentication authentication) {
+        ReskUser user = getUserFromAuthentication(authentication);
+        validateExaminer(user);
+
+        List<String> examCodes = appointExaminerRepository.findExamCodesByExaminerCode(user.getExaminerCode());
+        if (examCodes.isEmpty()) {
+            return new ExaminerFilterOptionsDTO();
+        }
+
+        List<String> allOccLevelNames = examinerRepository.findDistinctOccLevelNamesByExamCodes(examCodes);
+        List<String> allTools = examinerRepository.findDistinctAssessmentToolsByExamCodes(examCodes);
+
+        ExaminerFilterOptionsDTO options = new ExaminerFilterOptionsDTO();
+        Set<String> qualifications = new HashSet<>();
+        Set<String> levels = new HashSet<>();
+
+        for (String occLevelName : allOccLevelNames) {
+            if (occLevelName != null && !occLevelName.isEmpty()) {
+                String[] parts = occLevelName.split("ระดับ", 2);
+                qualifications.add(parts[0].trim());
+                if (parts.length > 1) {
+                    levels.add(parts[1].trim());
+                }
+            }
+        }
+        
+        List<String> sortedQualifications = new ArrayList<>(qualifications);
+        Collections.sort(sortedQualifications);
+        options.setQualifications(sortedQualifications);
+
+        List<String> sortedLevels = new ArrayList<>(levels);
+        Collections.sort(sortedLevels);
+        options.setLevels(sortedLevels);
+        
+        options.setAssessmentTools(allTools);
+
+        return options;
     }
 }

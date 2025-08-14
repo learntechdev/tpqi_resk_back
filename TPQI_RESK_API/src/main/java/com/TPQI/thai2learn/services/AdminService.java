@@ -7,8 +7,8 @@ import com.TPQI.thai2learn.security.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.TPQI.thai2learn.DTO.UserCreationDTO;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.TPQI.thai2learn.DTO.AdminUserDTO;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,46 +43,45 @@ public class AdminService {
     }
 
     @Transactional
-    public UserDTO createStaffUser(UserCreationDTO userDTO) {
+    public UserDTO createStaffUser(AdminUserDTO userDTO) {
         if (userRepository.findByUsername(userDTO.getUsername()).isPresent()) {
             throw new RuntimeException("Error: Username is already taken!");
+        }
+        if (userDTO.getPassword() == null || userDTO.getPassword().isBlank()) {
+            throw new RuntimeException("Error: Password is required for new user!");
         }
 
         ReskUser newUser = new ReskUser();
         newUser.setUsername(userDTO.getUsername());
         newUser.setFullName(userDTO.getFullName());
         newUser.setEmail(userDTO.getEmail());
-        
         newUser.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-        
         newUser.setRole(userDTO.getRole());
-        newUser.setActive(true);
+        newUser.setActive(userDTO.getIsActive());
+        newUser.setExaminerCode(userDTO.getExaminerCode());
+        newUser.setOrgCode(userDTO.getOrgCode());
 
         ReskUser savedUser = userRepository.save(newUser);
-
         return convertToUserDTO(savedUser);
     }
 
     @Transactional
-    public UserDTO updateUserRole(Long userId, Role newRole) {
+    public UserDTO updateStaffUser(Long userId, AdminUserDTO userDTO) {
         ReskUser user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
-        user.setRole(newRole);
+        user.setFullName(userDTO.getFullName());
+        user.setEmail(userDTO.getEmail());
+        user.setRole(userDTO.getRole());
+        user.setActive(userDTO.getIsActive());
+        user.setExaminerCode(userDTO.getExaminerCode());
+        user.setOrgCode(userDTO.getOrgCode());
+        
+        if (userDTO.getPassword() != null && !userDTO.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        }
 
         ReskUser updatedUser = userRepository.save(user);
-
-        return convertToUserDTO(updatedUser);
-    }
-
-    @Transactional
-    public UserDTO updateUserStatus(Long userId, boolean isActive) {
-        ReskUser user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
-
-        user.setActive(isActive);
-        ReskUser updatedUser = userRepository.save(user);
-
         return convertToUserDTO(updatedUser);
     }
 }

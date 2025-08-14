@@ -10,4 +10,8 @@ public interface AppointExaminerRepository extends JpaRepository<AppointExaminer
 
     @Query("SELECT ae.tpqiExamNo FROM AppointExaminer ae WHERE ae.examinerCode = :examinerCode")
     List<String> findExamCodesByExaminerCode(String examinerCode);
+
+    List<AppointExaminer> findByTpqiExamNo(String tpqiExamNo);
+
+    boolean existsByTpqiExamNoAndExaminerCode(String tpqiExamNo, String examinerCode);
 }

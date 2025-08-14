@@ -70,6 +70,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/delegate/**").hasAnyRole("ADMIN", "DELEGATE")
                     .requestMatchers("/api/auditor/**").hasAnyRole("ADMIN", "AUDITOR")
                     .requestMatchers("/api/assessments/**", "/api/submission/**").hasRole("ASSESSEE")
+                    .requestMatchers("/api/proxy/**").hasRole("EXAMINER_PROXY")
                     
                     .anyRequest().authenticated()
                 );

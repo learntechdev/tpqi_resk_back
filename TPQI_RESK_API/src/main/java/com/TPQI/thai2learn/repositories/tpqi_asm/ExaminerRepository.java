@@ -8,4 +8,12 @@ import java.util.List;
 
 public interface ExaminerRepository {
     Page<AssessmentInfoDTO> findExamRoundsByExamCodes(List<String> examCodes, String search, String qualification, String level, String tool, Pageable pageable);
+
+    Page<AssessmentInfoDTO> findAllExamRounds(String search, String qualification, String level, String tool, Pageable pageable);
+
+    List<String> findAllDistinctOccLevelNames();
+    List<String> findAllDistinctAssessmentTools();
+
+    List<String> findDistinctOccLevelNamesByExamCodes(List<String> examCodes);
+    List<String> findDistinctAssessmentToolsByExamCodes(List<String> examCodes);
 }
