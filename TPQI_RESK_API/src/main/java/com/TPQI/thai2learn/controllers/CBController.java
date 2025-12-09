@@ -1,0 +1,133 @@
+package com.TPQI.thai2learn.controllers;
+
+import com.TPQI.thai2learn.DTO.AssessmentSubmissionPageDTO;
+import com.TPQI.thai2learn.DTO.CbApplicantSummaryDTO;
+import com.TPQI.thai2learn.DTO.EvidenceFileDTO;
+import com.TPQI.thai2learn.DTO.SubmissionRequestDTO;
+import com.TPQI.thai2learn.services.AssessmentSubmissionService;
+import com.TPQI.thai2learn.services.CBService;
+import com.TPQI.thai2learn.services.FileStorageService;
+import com.TPQI.thai2learn.services.SubmissionService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import com.TPQI.thai2learn.DTO.CbExamRoundDTO;
+import com.TPQI.thai2learn.DTO.CbFilterOptionsDTO;
+import com.TPQI.thai2learn.entities.tpqi_asm.AssessmentEvidenceFile;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/cb")
+@PreAuthorize("hasAnyRole('ADMIN', 'CB_OFFICER')") 
+public class CBController {
+
+    @Autowired
+    private CBService cbService;
+
+    @Autowired
+    private AssessmentSubmissionService assessmentSubmissionService;
+
+    @Autowired
+    private FileStorageService fileStorageService;
+
+    @Autowired
+    private SubmissionService submissionService;
+
+    @GetMapping("/exam-rounds")
+    public ResponseEntity<Page<CbExamRoundDTO>> getExamRounds(
+            Authentication authentication,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String qualification,
+            @RequestParam(required = false) String level,
+            @RequestParam(required = false) String tool,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<CbExamRoundDTO> examRounds = cbService.getExamRoundsForCbUser(authentication, search, qualification, level, tool, pageable);
+        return ResponseEntity.ok(examRounds);
+    }
+
+    @GetMapping("/exam-rounds/filters")
+    public ResponseEntity<CbFilterOptionsDTO> getExamRoundFilters(Authentication authentication) {
+        CbFilterOptionsDTO filterOptions = cbService.getFilterOptionsForCbUser(authentication);
+        return ResponseEntity.ok(filterOptions);
+    }
+
+    @GetMapping("/applicants")
+    public ResponseEntity<Page<CbApplicantSummaryDTO>> getApplicantsByExamRound(
+            @RequestParam String tpqiExamNo,
+            Authentication authentication,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<CbApplicantSummaryDTO> applicantsPage = cbService.getApplicantsByExamRound(authentication, tpqiExamNo, search, status, pageable);
+        return ResponseEntity.ok(applicantsPage);
+    }
+
+
+    @GetMapping("/submission-statuses")
+    public ResponseEntity<List<String>> getSubmissionStatuses() {
+        List<String> statuses = List.of(
+            "ยังไม่ได้ประเมิน", "ยังไม่ส่งประเมิน", "ส่งประเมินแล้ว",
+            "เจ้าหน้าที่สอบขอหลักฐานเพิ่ม", "ประเมินผลแล้ว", "ยกเลิกผลการประเมินแล้ว"
+        );
+        return ResponseEntity.ok(statuses);
+    }
+
+    @GetMapping("/submission-details/{applicantId}")
+    public ResponseEntity<AssessmentSubmissionPageDTO> getSubmissionDetailsForCb(@PathVariable Long applicantId, Authentication authentication) {
+        cbService.verifyApplicantAccess(authentication, applicantId);
+        AssessmentSubmissionPageDTO pageData = assessmentSubmissionService.getSubmissionPageDetails(applicantId);
+        return ResponseEntity.ok(pageData);
+    }
+
+    @GetMapping("/files/{applicantId}")
+    public ResponseEntity<List<EvidenceFileDTO>> getFilesByApplicant(@PathVariable Long applicantId, Authentication authentication) {
+        cbService.verifyApplicantAccess(authentication, applicantId);
+        List<EvidenceFileDTO> files = fileStorageService.getFilesByApplicantId(applicantId);
+        return ResponseEntity.ok(files);
+    }
+
+    @PostMapping("/upload-file")
+    public ResponseEntity<?> uploadFileForApplicant(
+            Authentication authentication,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("applicantId") Long applicantId,
+            @RequestParam(value = "description", required = false) String description) {
+
+        cbService.verifyApplicantAccess(authentication, applicantId);
+
+        AssessmentEvidenceFile savedFile = fileStorageService.storeAndSave(file, applicantId, description);
+
+        Map<String, Object> response = Map.of(
+            "message", "File uploaded successfully for applicant: " + applicantId,
+            "fileId", savedFile.getId(),
+            "filePath", savedFile.getFilePath()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/delete-file/{fileId}")
+    public ResponseEntity<?> deleteFileForApplicant(@PathVariable Long fileId) {
+        fileStorageService.deleteFile(fileId);
+        return ResponseEntity.ok(Map.of("message", "File deleted successfully!"));
+    }
+
+    @PostMapping("/save-submission")
+    public ResponseEntity<?> saveSubmissionForApplicant(@RequestBody SubmissionRequestDTO submissionRequest) {
+        submissionService.processSubmission(submissionRequest);
+        return ResponseEntity.ok().body(Map.of("message", "Submission saved successfully!"));
+    }
+}

@@ -6,21 +6,30 @@ public class EocDTO {
     private String eocId;
     private String eocCode;
     private String eocName;
-    private String uocId;
-    private List<PcDTO> pcs;
+    private List<PcDTO> performanceCriteria;
+    private boolean isEvidenceLinked; 
+
+    private transient String parentUocId;
+
+    public EocDTO(String eocId, String eocCode, String eocName, List<PcDTO> performanceCriteria) {
+        this.eocId = eocId;
+        this.eocCode = eocCode;
+        this.eocName = eocName;
+        this.performanceCriteria = performanceCriteria;
+        this.isEvidenceLinked = false; 
+    }
 
     public String getEocId() { return eocId; }
     public void setEocId(String eocId) { this.eocId = eocId; }
-
     public String getEocCode() { return eocCode; }
     public void setEocCode(String eocCode) { this.eocCode = eocCode; }
-
     public String getEocName() { return eocName; }
     public void setEocName(String eocName) { this.eocName = eocName; }
+    public List<PcDTO> getPerformanceCriteria() { return performanceCriteria; }
+    public void setPerformanceCriteria(List<PcDTO> performanceCriteria) { this.performanceCriteria = performanceCriteria; }
+    public String getParentUocId() { return parentUocId; }
+    public void setParentUocId(String parentUocId) { this.parentUocId = parentUocId; }
 
-    public String getUocId() { return uocId; }
-    public void setUocId(String uocId) { this.uocId = uocId; }
-
-    public List<PcDTO> getPcs() { return pcs; }
-    public void setPcs(List<PcDTO> pcs) { this.pcs = pcs; }
+    public boolean isEvidenceLinked() { return isEvidenceLinked; }
+    public void setEvidenceLinked(boolean evidenceLinked) { isEvidenceLinked = evidenceLinked; }
 }

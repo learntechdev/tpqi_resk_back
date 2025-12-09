@@ -1,36 +1,29 @@
 package com.TPQI.thai2learn.controllers;
 
 import com.TPQI.thai2learn.DTO.ReskCertificateTypeDTO;
-import com.TPQI.thai2learn.DTO.UocDTO;
 import com.TPQI.thai2learn.services.MasterDataCertifiteTypeService;
-import com.TPQI.thai2learn.services.UocHierarchyService;
-
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.TPQI.thai2learn.DTO.StatusDTO;
+import com.TPQI.thai2learn.entities.tpqi_asm.types.AssessmentStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/Masterdata")
 public class MasterDataController {
 
-    private final MasterDataCertifiteTypeService masterDataService;
-    private final UocHierarchyService uocHierarchyService;
-
-    public MasterDataController(
-            MasterDataCertifiteTypeService masterDataService,
-            UocHierarchyService uocHierarchyService) {
-        this.masterDataService = masterDataService;
-        this.uocHierarchyService = uocHierarchyService;
-    }
+    @Autowired
+    private MasterDataCertifiteTypeService masterDataService;
 
     @GetMapping("/ListCertificateTypes")
     public List<ReskCertificateTypeDTO> getCertificateTypes() {
         return masterDataService.getAllCertificateTypes();
     }
 
-    @GetMapping("/UocSelectorHierarchy/{occLevelId}")
-    public ResponseEntity<List<UocDTO>> getHierarchy(@PathVariable String occLevelId) {
-        return ResponseEntity.ok(uocHierarchyService.getHierarchyByOccLevelId(occLevelId));
+    @GetMapping("/assessment-statuses")
+    public List<StatusDTO> getAssessmentStatuses() {
+        return AssessmentStatus.getDistinctStatusDTOs();
     }
 }
